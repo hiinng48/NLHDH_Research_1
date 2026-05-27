@@ -1,8 +1,8 @@
 # NLHDH Research Report
 
-This project is a LaTeX report exported from Overleaf. It is configured for local editing in VS Code with MiKTeX Basic, LaTeX Workshop, and XeLaTeX.
+This project is a LaTeX report. It is configured for local editing in VS Code with MiKTeX Basic, LaTeX Workshop, and XeLaTeX.
 
-XeLaTeX is used because the report contains Vietnamese text and uses Unicode fonts such as Times New Roman. This project does not use `latexmk`, does not require Perl, and does not require TeX Live Full.
+XeLaTeX is used because the report contains Vietnamese text and uses Unicode fonts such as Times New Roman. 
 
 ## Install
 
@@ -54,10 +54,3 @@ If both commands work, LaTeX Workshop can find XeLaTeX.
 4. Open the PDF preview with `Ctrl + Alt + V`.
 
 The PDF and build files are written to the `build/` folder. The LaTeX Workshop settings are stored in `.vscode/settings.json` so collaborators can use the same XeLaTeX setup.
-
-## Notes
-
-- Keep `main.tex` as the main/root file.
-- Use XeLaTeX for this project, not pdfLaTeX.
-- Do not switch the recipe to `latexmk`; this setup intentionally avoids Perl.
-- On the first build, MiKTeX may install several missing packages. Let it finish, then build again if needed.
