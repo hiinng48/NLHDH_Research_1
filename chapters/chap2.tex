@@ -1,0 +1,49 @@
+\chapter{Cơ sở lý thuyết}
+
+\section{Tiến trình, luồng và thực thi đồng thời}
+
+Trong hệ điều hành, \textit{tiến trình} là một chương trình đang được thực thi, có không gian địa chỉ, tài nguyên và trạng thái riêng. \textit{Luồng} là đơn vị thực thi nhẹ hơn, có thể chia sẻ không gian địa chỉ trong cùng một tiến trình. Khi nhiều tiến trình hoặc nhiều luồng cùng tồn tại, hệ điều hành phải liên tục chuyển đổi CPU giữa chúng, tạo ra cảm giác các công việc đang chạy song song.
+
+Thực thi đồng thời giúp hệ thống tận dụng tốt tài nguyên, tăng khả năng phản hồi và cho phép nhiều tác vụ hoạt động cùng lúc. Tuy nhiên, nó cũng làm xuất hiện các lỗi phụ thuộc vào thứ tự chạy, đặc biệt khi nhiều luồng cùng truy cập dữ liệu hoặc tài nguyên dùng chung.
+
+\section{Tài nguyên găng và vùng găng}
+
+\textit{Tài nguyên găng} là tài nguyên dùng chung mà tại một thời điểm chỉ nên được truy cập bởi một số lượng tiến trình nhất định, thường là một tiến trình duy nhất. Ví dụ: biến đếm chung, hàng đợi, bộ đệm, tệp tin, máy in, chỗ ngồi trong phòng, vị trí trên cầu một làn hoặc số vé còn lại trong hệ thống bán vé.
+
+\textit{Vùng găng} là đoạn mã truy cập trực tiếp vào tài nguyên găng. Nếu hai tiến trình cùng đi vào vùng găng mà không có cơ chế bảo vệ, chương trình có thể cho ra kết quả sai. Hiện tượng này gọi là \textit{race condition}.
+
+Một lời giải vùng găng thường cần đảm bảo ba yêu cầu:
+
+\begin{itemize}
+    \item \textbf{Mutual exclusion:} Không có hai tiến trình cùng truy cập trái phép vào vùng găng.
+    \item \textbf{Progress:} Nếu vùng găng đang rảnh, hệ thống phải cho phép một tiến trình phù hợp được đi tiếp.
+    \item \textbf{Bounded waiting:} Một tiến trình không bị chờ vô hạn trong khi các tiến trình khác liên tục được phục vụ.
+\end{itemize}
+
+\section{Race condition, deadlock và starvation}
+
+\textit{Race condition} xảy ra khi kết quả của chương trình phụ thuộc vào thứ tự xen kẽ giữa các tiến trình. Đây là lỗi khó phát hiện vì chương trình có thể chạy đúng trong nhiều lần thử, nhưng lại sai trong một thời điểm khác.
+
+\textit{Deadlock} xảy ra khi một nhóm tiến trình chờ lẫn nhau và không tiến trình nào có thể tiếp tục. Ví dụ, tiến trình A giữ tài nguyên 1 và chờ tài nguyên 2, trong khi tiến trình B giữ tài nguyên 2 và chờ tài nguyên 1.
+
+\textit{Starvation} xảy ra khi một tiến trình hợp lệ liên tục bị bỏ qua, không bao giờ nhận được tài nguyên cần thiết mặc dù hệ thống vẫn hoạt động.
+
+\section{Mutex, semaphore và monitor}
+
+\textbf{Mutex} là khóa loại trừ lẫn nhau, thường dùng để bảo vệ vùng găng chỉ cho một luồng vào tại một thời điểm. Tiến trình phải khóa mutex trước khi vào vùng găng và mở khóa sau khi rời khỏi vùng găng.
+
+\textbf{Semaphore} là biến đồng bộ có thể dùng để đếm số tài nguyên còn khả dụng hoặc điều khiển thứ tự chạy giữa các tiến trình. Hai thao tác cơ bản là \texttt{wait} và \texttt{signal}. Semaphore nhị phân gần giống mutex, còn semaphore đếm phù hợp với các tài nguyên có nhiều bản sao.
+
+\textbf{Monitor} là mô hình đồng bộ ở mức trừu tượng cao hơn, gom dữ liệu dùng chung và các thao tác trên dữ liệu đó vào cùng một cấu trúc. Monitor thường đi kèm \textit{condition variable} để cho phép tiến trình ngủ và được đánh thức khi điều kiện cần thiết đã thỏa mãn.
+
+\section{Tiêu chí phân tích các bài toán}
+
+Trong các chương sau, mỗi bài toán được phân tích theo một khung chung:
+
+\begin{itemize}
+    \item \textbf{Mô tả bài toán:} Tình huống, loại tiến trình tham gia và mục tiêu cần đạt.
+    \item \textbf{Tài nguyên găng:} Dữ liệu hoặc tài nguyên dùng chung cần được bảo vệ.
+    \item \textbf{Ràng buộc đồng bộ:} Điều kiện để tiến trình được đi tiếp, giới hạn số lượng hoặc yêu cầu ghép nhóm.
+    \item \textbf{Hướng giải quyết:} Công cụ đồng bộ phù hợp như mutex, semaphore, monitor hoặc biến điều kiện.
+    \item \textbf{Lỗi cần tránh:} Race condition, deadlock, starvation và vi phạm giới hạn tài nguyên.
+\end{itemize}

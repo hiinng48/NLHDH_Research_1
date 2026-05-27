@@ -1,0 +1,71 @@
+\chapter{Nhóm bài toán giới hạn tài nguyên và điều phối truy cập}
+
+\section{Bài toán Phòng đọc sách giới hạn (Room Party Problem) -- Duy}
+
+\textbf{Người phụ trách:} Duy.
+
+Bài toán mô phỏng một căn phòng hoặc khu vực sinh hoạt có giới hạn số người được vào cùng lúc. Cần thiết kế cơ chế đồng bộ để người tham gia chỉ được vào phòng khi điều kiện cho phép, đồng thời đảm bảo phòng không vượt quá sức chứa.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Mô tả tài nguyên găng là số chỗ trống trong phòng.
+    \item Xác định điều kiện được vào và điều kiện phải chờ.
+    \item Đề xuất lời giải bằng semaphore đếm hoặc monitor.
+    \item Phân tích nguy cơ starvation nếu một nhóm người liên tục chiếm phòng.
+\end{itemize}
+
+\section{Bài toán Bãi đỗ xe giới hạn (Parking Lot Problem) -- Duy}
+
+\textbf{Người phụ trách:} Duy.
+
+Bài toán mô tả một bãi đỗ xe có số chỗ hữu hạn. Xe chỉ được vào khi còn chỗ trống và phải trả lại chỗ khi rời bãi. Đây là dạng bài toán tài nguyên đếm điển hình.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xem mỗi chỗ đỗ là một đơn vị tài nguyên.
+    \item Dùng semaphore đếm để quản lý số chỗ còn lại.
+    \item Bảo vệ biến trạng thái của bãi xe bằng mutex.
+    \item Đảm bảo xe chờ được đánh thức khi có xe khác rời bãi.
+\end{itemize}
+
+\section{Bài toán Máy bán vé (Ticket Selling Problem) -- Chưa phân công}
+
+\textbf{Người phụ trách:} Chưa phân công.
+
+Bài toán mô phỏng nhiều quầy hoặc nhiều luồng cùng bán vé từ một kho vé chung. Nếu không đồng bộ, hai người bán có thể cùng bán một vé hoặc làm sai số lượng vé còn lại.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định biến dùng chung là số vé còn lại.
+    \item Phân tích race condition khi nhiều quầy cùng cập nhật biến vé.
+    \item Sử dụng mutex để bảo vệ thao tác kiểm tra và trừ vé.
+    \item Xử lý trường hợp hết vé để các luồng dừng đúng cách.
+\end{itemize}
+
+\section{Bài toán Tiệc ăn Sushi (Sushi Bar Problem) -- Tuấn}
+
+\textbf{Người phụ trách:} Tuấn.
+
+Bài toán mô phỏng một quán sushi có số ghế giới hạn. Khách chỉ được ngồi khi còn ghế, và những khách đến sau phải chờ nếu quán đầy. Một số biến thể yêu cầu xử lý theo nhóm hoặc theo lượt để tránh chen ngang.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Mô tả số ghế như tài nguyên hữu hạn.
+    \item Thiết kế cơ chế khách vào, ăn và rời quán.
+    \item Phân tích cách dùng semaphore đếm cho ghế trống.
+    \item Bổ sung chính sách công bằng nếu cần tránh starvation.
+\end{itemize}
+
+\section{Bài toán Bữa ăn tập thể (Dining Savages Problem) -- Tuấn}
+
+\textbf{Người phụ trách:} Tuấn.
+
+Bài toán Dining Savages mô tả một nồi thức ăn chung có số phần hữu hạn. Các savage lấy phần ăn từ nồi; nếu nồi hết, một người phải đánh thức đầu bếp để nấu thêm.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định nồi thức ăn là tài nguyên găng.
+    \item Bảo vệ số phần ăn còn lại bằng mutex.
+    \item Dùng semaphore để đánh thức đầu bếp khi nồi rỗng.
+    \item Đảm bảo chỉ một savage gọi đầu bếp trong mỗi lần nồi hết.
+\end{itemize}

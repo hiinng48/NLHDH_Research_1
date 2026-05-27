@@ -1,0 +1,90 @@
+\chapter{Giới thiệu đề tài}
+
+\section{Lý do chọn đề tài}
+
+Trong hệ điều hành, các tiến trình và luồng thường không hoạt động hoàn toàn độc lập. Chúng có thể cùng đọc ghi lên một vùng nhớ, cùng sử dụng một thiết bị vào ra, cùng lấy dữ liệu từ một hàng đợi hoặc cùng chờ một điều kiện nào đó trước khi tiếp tục thực thi. Những vùng mã hoặc tài nguyên dùng chung như vậy được gọi là \textit{tài nguyên găng} hoặc \textit{critical resource}. Nếu nhiều tiến trình truy cập tài nguyên găng một cách tự do, kết quả của chương trình có thể phụ thuộc vào thứ tự chạy ngẫu nhiên của CPU, từ đó sinh ra lỗi race condition.
+
+Vấn đề đồng bộ tài nguyên găng là một trong những nội dung quan trọng nhất của học phần Nguyên lý Hệ điều hành. Đây không chỉ là phần kiến thức lý thuyết về mutex, semaphore hay monitor, mà còn là nền tảng để hiểu cách hệ điều hành điều phối tiến trình, bảo vệ dữ liệu dùng chung và đảm bảo hệ thống chạy ổn định khi có nhiều luồng thực thi đồng thời.
+
+Các bài toán đồng bộ kinh điển thường được xây dựng dưới dạng tình huống đời sống như phòng đọc sách, cầu một làn, xe buýt ở trạm, tiệc sushi, bãi đỗ xe, thang máy hoặc bài toán ông già Noel. Mặc dù tên gọi có vẻ đơn giản, mỗi bài toán đều ẩn chứa một kiểu ràng buộc đồng bộ khác nhau: giới hạn số lượng tiến trình trong vùng găng, ghép nhóm đúng điều kiện, đánh thức tiến trình theo thứ tự, kiểm soát tài nguyên hữu hạn hoặc tránh để một nhóm tiến trình bị đói tài nguyên.
+
+Vì vậy, nhóm lựa chọn đề tài \textbf{``Các bài toán đồng bộ tài nguyên găng''} nhằm tổng hợp, phân loại và phân tích một tập các bài toán tiêu biểu. Qua đó, nhóm có thể hiểu sâu hơn bản chất của đồng bộ hóa thay vì chỉ ghi nhớ cú pháp của các primitive.
+
+\section{Mục tiêu nghiên cứu}
+
+Đề tài hướng tới các mục tiêu chính sau:
+
+\begin{itemize}
+    \item Trình bày khái niệm tài nguyên găng, vùng găng, race condition và nhu cầu đồng bộ trong hệ điều hành.
+    \item Làm rõ vai trò của các công cụ đồng bộ cơ bản như mutex, semaphore, monitor và biến điều kiện.
+    \item Phân tích các bài toán đồng bộ tiêu biểu, chỉ ra tài nguyên dùng chung, các loại tiến trình tham gia và ràng buộc cần đảm bảo.
+    \item Đề xuất hướng giải quyết ở mức thuật toán hoặc giả mã cho từng nhóm bài toán.
+    \item Đánh giá lời giải dựa trên các tiêu chí: mutual exclusion, progress, bounded waiting, tránh deadlock và hạn chế starvation.
+\end{itemize}
+
+\section{Đối tượng và phạm vi nghiên cứu}
+
+Đối tượng nghiên cứu của báo cáo là các bài toán đồng bộ tiến trình trong môi trường có nhiều luồng hoặc nhiều tiến trình cùng truy cập tài nguyên dùng chung.
+
+Phạm vi nghiên cứu tập trung vào các bài toán sau:
+
+\begin{itemize}
+    \item Bài toán Tàu lượn siêu tốc (Roller Coaster Problem) -- chưa phân công.
+    \item Bài toán Phòng đọc sách giới hạn (Room Party Problem) -- Duy.
+    \item Bài toán Qua sông (River Crossing Problem / Hackers and Serfs) -- Chính.
+    \item Bài toán Những người hút thuốc (Cigarette Smokers Problem) -- Chính.
+    \item Bài toán Ông già Noel (Santa Claus Problem) -- Phương.
+    \item Bài toán Tiệc ăn Sushi (Sushi Bar Problem) -- Tuấn.
+    \item Bài toán Bữa ăn tập thể (Dining Savages Problem) -- Tuấn.
+    \item Bài toán Cầu một làn (One-Lane Bridge Problem) -- chưa phân công.
+    \item Bài toán Thang máy (Elevator Problem) -- Duy.
+    \item Bài toán Máy bán vé (Ticket Selling Problem) -- chưa phân công.
+    \item Bài toán Bãi đỗ xe giới hạn (Parking Lot Problem) -- Duy.
+    \item Bài toán Trông trẻ (Child Care Problem) -- Chính.
+    \item Bài toán Gấu và đàn ong (Bear and Honeybees Problem) -- Phương.
+    \item Bài toán tạo phân tử H2O -- chưa phân công.
+    \item Bài toán Ghép đội đấu hạng (Multiplayer Matchmaking Problem) -- Tuấn.
+    \item Bài toán Xe buýt ở trạm (Senate Bus Problem) -- Phương.
+\end{itemize}
+
+Báo cáo không đi sâu vào triển khai mã nguồn hoàn chỉnh cho từng bài toán, mà ưu tiên mô tả bài toán, phân tích ràng buộc đồng bộ và trình bày ý tưởng lời giải ở mức có thể chuyển thành chương trình.
+
+\section{Phân công nhiệm vụ}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|p{3cm}|p{11cm}|}
+        \hline
+        \textbf{Thành viên} & \textbf{Nội dung phụ trách} \\ \hline
+        Nguyễn Khắc Duy & Room Party, Elevator, Parking Lot. \\ \hline
+        Nguyễn Hữu Chính & River Crossing, Cigarette Smokers, Child Care. \\ \hline
+        Hoàng Thị Thu Phương & Santa Claus, Bear and Honeybees, Senate Bus. \\ \hline
+        Nguyễn Đăng Cao Tuấn & Sushi Bar, Dining Savages, Multiplayer Matchmaking. \\ \hline
+        Chưa phân công & Roller Coaster, One-Lane Bridge, Ticket Selling, H2O. \\ \hline
+    \end{tabular}
+    \caption{Phân công bài toán nghiên cứu cho các thành viên}
+\end{table}
+
+\section{Phương pháp nghiên cứu}
+
+Nhóm sử dụng các phương pháp nghiên cứu sau:
+
+\begin{itemize}
+    \item \textbf{Tổng hợp tài liệu:} Tham khảo giáo trình hệ điều hành, tài liệu về lập trình đồng thời và các nguồn mô tả bài toán đồng bộ kinh điển.
+    \item \textbf{Phân tích mô hình:} Với mỗi bài toán, xác định tiến trình tham gia, tài nguyên găng, điều kiện vào vùng găng và điều kiện đánh thức.
+    \item \textbf{So sánh lời giải:} Đối chiếu các cách tiếp cận bằng semaphore, mutex, monitor hoặc biến điều kiện để nhận ra ưu điểm và hạn chế.
+    \item \textbf{Đánh giá tính đúng đắn:} Kiểm tra lời giải theo các lỗi thường gặp như race condition, deadlock, starvation và vi phạm giới hạn tài nguyên.
+\end{itemize}
+
+\section{Bố cục của báo cáo}
+
+Báo cáo dự kiến được tổ chức như sau:
+
+\begin{itemize}
+    \item \textbf{Chương 1:} Giới thiệu đề tài, lý do chọn đề tài, mục tiêu, phạm vi và phương pháp nghiên cứu.
+    \item \textbf{Chương 2:} Trình bày cơ sở lý thuyết về tiến trình, luồng, vùng găng và các công cụ đồng bộ.
+    \item \textbf{Chương 3:} Phân tích nhóm bài toán giới hạn tài nguyên và điều phối truy cập.
+    \item \textbf{Chương 4:} Phân tích nhóm bài toán ghép nhóm và phối hợp điều kiện.
+    \item \textbf{Chương 5:} Phân tích nhóm bài toán mô phỏng dịch vụ thực tế, sau đó tổng kết và so sánh các dạng bài toán.
+\end{itemize}

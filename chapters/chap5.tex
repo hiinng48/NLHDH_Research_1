@@ -1,0 +1,77 @@
+\chapter{Nhóm bài toán mô phỏng dịch vụ thực tế và tổng kết}
+
+\section{Bài toán Tàu lượn siêu tốc (Roller Coaster Problem) -- Chưa phân công}
+
+\textbf{Người phụ trách:} Chưa phân công.
+
+Bài toán mô phỏng một tàu lượn có số ghế cố định. Tàu chỉ khởi hành khi đủ khách hoặc khi điều kiện khởi hành được thỏa mãn; khách phải lên tàu, chờ tàu chạy xong rồi mới rời tàu.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định tiến trình tàu và tiến trình khách.
+    \item Đồng bộ ba pha: lên tàu, chạy tàu, xuống tàu.
+    \item Dùng semaphore để giới hạn số khách theo sức chứa.
+    \item Dùng barrier để đảm bảo tàu chỉ chạy khi nhóm khách đã sẵn sàng.
+\end{itemize}
+
+\section{Bài toán Cầu một làn (One-Lane Bridge Problem) -- Chưa phân công}
+
+\textbf{Người phụ trách:} Chưa phân công.
+
+Bài toán mô phỏng một cây cầu chỉ cho xe đi theo một hướng tại một thời điểm. Cần đảm bảo các xe cùng chiều có thể đi qua hợp lý, nhưng không để xe hai chiều đối đầu trên cầu.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định hai loại tiến trình: xe đi từ hai hướng ngược nhau.
+    \item Bảo vệ trạng thái hướng hiện tại của cầu bằng mutex.
+    \item Dùng condition variable để xe chờ khi cầu đang phục vụ hướng ngược lại.
+    \item Đề xuất cơ chế công bằng để tránh một hướng bị chờ quá lâu.
+\end{itemize}
+
+\section{Bài toán Thang máy (Elevator Problem) -- Duy}
+
+\textbf{Người phụ trách:} Duy.
+
+Bài toán mô phỏng thang máy phục vụ nhiều hành khách ở nhiều tầng. Hành khách phải chờ thang đến đúng tầng, vào thang nếu còn chỗ và rời thang ở tầng đích.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định tiến trình thang máy và tiến trình hành khách.
+    \item Quản lý hàng đợi theo tầng và theo hướng di chuyển.
+    \item Đồng bộ việc vào thang, ra thang và đóng mở cửa.
+    \item Phân tích vấn đề starvation khi thang ưu tiên một hướng quá lâu.
+\end{itemize}
+
+\section{Bài toán Gấu và đàn ong (Bear and Honeybees Problem) -- Phương}
+
+\textbf{Người phụ trách:} Phương.
+
+Bài toán mô tả đàn ong lần lượt bỏ mật vào hũ. Khi hũ đầy, con ong cuối cùng đánh thức gấu để ăn hết mật, sau đó đàn ong mới tiếp tục đổ mật vào hũ.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định hũ mật là tài nguyên găng.
+    \item Bảo vệ biến số lượng mật hiện có bằng mutex.
+    \item Dùng semaphore để đánh thức gấu khi hũ đầy.
+    \item Chặn ong tiếp tục đổ mật trong lúc gấu đang ăn.
+\end{itemize}
+
+\section{Bài toán Xe buýt ở trạm (Senate Bus Problem) -- Phương}
+
+\textbf{Người phụ trách:} Phương.
+
+Bài toán mô phỏng xe buýt đến trạm và đón các hành khách đang chờ. Những khách đến sau khi xe đã bắt đầu đón thường phải chờ chuyến tiếp theo.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định tiến trình xe buýt và tiến trình hành khách.
+    \item Quản lý số khách đang chờ tại trạm.
+    \item Dùng semaphore để cho phép khách lên xe đúng lượt.
+    \item Đảm bảo xe chỉ rời trạm sau khi đã đón xong nhóm khách hợp lệ.
+\end{itemize}
+
+\section{So sánh và tổng kết}
+
+Các bài toán trong báo cáo có thể được chia thành ba nhóm lớn. Nhóm thứ nhất tập trung vào tài nguyên hữu hạn như phòng, bãi đỗ xe, ghế ngồi hoặc vé. Nhóm thứ hai tập trung vào ghép nhóm theo điều kiện như River Crossing, H2O, Santa Claus và Matchmaking. Nhóm thứ ba mô phỏng dịch vụ thực tế có nhiều pha hoạt động như Roller Coaster, Elevator, Bear and Honeybees và Senate Bus.
+
+Điểm chung của các bài toán là đều yêu cầu xác định đúng tài nguyên găng, trạng thái dùng chung và điều kiện đánh thức. Một lời giải tốt không chỉ ngăn race condition mà còn phải tránh deadlock, hạn chế starvation và đảm bảo hệ thống vẫn có progress trong các tình huống cạnh tranh tài nguyên.

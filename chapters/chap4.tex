@@ -1,0 +1,85 @@
+\chapter{Nhóm bài toán ghép nhóm và phối hợp điều kiện}
+
+\section{Bài toán Qua sông (River Crossing Problem / Hackers and Serfs) -- Chính}
+
+\textbf{Người phụ trách:} Chính.
+
+Bài toán yêu cầu ghép một nhóm người lên thuyền theo các tổ hợp hợp lệ. Ví dụ biến thể Hackers and Serfs thường yêu cầu mỗi thuyền có bốn người, nhưng không được tạo ra tổ hợp gây mất cân bằng không hợp lệ.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định các loại tiến trình tham gia: hacker và serf.
+    \item Liệt kê các tổ hợp được phép lên thuyền.
+    \item Dùng mutex để bảo vệ bộ đếm số người đang chờ.
+    \item Dùng semaphore để đánh thức đúng nhóm được chọn.
+\end{itemize}
+
+\section{Bài toán Những người hút thuốc (Cigarette Smokers Problem) -- Chính}
+
+\textbf{Người phụ trách:} Chính.
+
+Bài toán gồm một tác nhân đặt hai trong ba nguyên liệu lên bàn, và người hút thuốc có nguyên liệu còn lại sẽ được hút. Mục tiêu là đánh thức đúng tiến trình phù hợp với cặp nguyên liệu hiện có.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Mô tả ba loại nguyên liệu và ba loại smoker.
+    \item Xác định bàn đặt nguyên liệu là tài nguyên găng.
+    \item Dùng semaphore để báo hiệu đúng smoker.
+    \item Tránh tình trạng nhiều smoker cùng lấy nguyên liệu một lúc.
+\end{itemize}
+
+\section{Bài toán Ông già Noel (Santa Claus Problem) -- Phương}
+
+\textbf{Người phụ trách:} Phương.
+
+Bài toán Santa Claus mô phỏng Santa ngủ cho đến khi đủ điều kiện được đánh thức: hoặc tất cả tuần lộc đã trở về, hoặc có một nhóm elf cần được giúp. Bài toán có nhiều điều kiện ưu tiên và ghép nhóm.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định ba loại tiến trình: Santa, reindeer và elf.
+    \item Mô tả điều kiện đánh thức Santa.
+    \item Phân tích ưu tiên giữa nhóm reindeer và nhóm elf.
+    \item Dùng semaphore hoặc monitor để ghép đúng nhóm elf.
+\end{itemize}
+
+\section{Bài toán Trông trẻ (Child Care Problem) -- Chính}
+
+\textbf{Người phụ trách:} Chính.
+
+Bài toán Child Care đặt ra ràng buộc tỷ lệ giữa số trẻ em và số người lớn trong phòng. Trẻ em chỉ được vào nếu sau khi vào vẫn thỏa mãn tỷ lệ an toàn; người lớn chỉ được rời đi nếu sau khi rời đi tỷ lệ vẫn hợp lệ.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định biến đếm số trẻ em và số người lớn.
+    \item Bảo vệ thao tác cập nhật bộ đếm bằng mutex.
+    \item Dùng condition variable để chờ khi tỷ lệ không hợp lệ.
+    \item Phân tích trường hợp người lớn muốn rời phòng nhưng chưa đủ điều kiện.
+\end{itemize}
+
+\section{Bài toán tạo phân tử H2O -- Chưa phân công}
+
+\textbf{Người phụ trách:} Chưa phân công.
+
+Bài toán yêu cầu ghép đúng hai nguyên tử hydro và một nguyên tử oxy để tạo thành một phân tử nước. Không nguyên tử nào được đi tiếp nếu chưa tạo đủ nhóm hợp lệ.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định hai loại tiến trình: H và O.
+    \item Đảm bảo mỗi nhóm phản ứng có đúng 2 H và 1 O.
+    \item Sử dụng semaphore để chặn các nguyên tử dư.
+    \item Dùng barrier để ba tiến trình trong cùng phân tử kết thúc đồng bộ.
+\end{itemize}
+
+\section{Bài toán Ghép đội đấu hạng (Multiplayer Matchmaking Problem) -- Tuấn}
+
+\textbf{Người phụ trách:} Tuấn.
+
+Bài toán mô phỏng hệ thống ghép trận trong game nhiều người chơi. Người chơi phải chờ cho đến khi đủ số lượng hoặc đủ điều kiện xếp hạng để tạo một trận đấu hợp lệ.
+
+Các ý chính cần triển khai:
+\begin{itemize}
+    \item Xác định hàng đợi người chơi theo rank hoặc vai trò.
+    \item Thiết kế điều kiện tạo phòng đấu.
+    \item Bảo vệ hàng đợi matchmaking bằng mutex.
+    \item Đánh thức đúng nhóm người chơi khi trận đấu được tạo.
+\end{itemize}
