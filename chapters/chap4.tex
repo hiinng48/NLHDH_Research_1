@@ -76,7 +76,7 @@ Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{cap
         \State $\texttt{waitingH} \gets \texttt{waitingH} - 2$; $\texttt{waitingS} \gets \texttt{waitingS} - 2$
         \State $\texttt{captain} \gets true$
     \Else
-        \State \Call{signal}{\texttt{mutex}} \Comment{khong phai captain thi nho mutex truoc khi cho}
+        \State \Call{signal}{\texttt{mutex}} \Comment{không phải captain thì nhả mutex trước khi chờ}
     \EndIf
 
     \State \Call{wait}{\texttt{hQueue}} \Comment{chỉ được lên thuyền khi được chọn}
