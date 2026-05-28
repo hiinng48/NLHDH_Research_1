@@ -114,7 +114,7 @@ Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{cap
     \State \Call{Barrier4}{}
     \If{$\texttt{captain}$}
         \State \Call{RowBoat}{}
-        \State \Call{signal}{\texttt{mutex}} \Comment{mo khoa sau khi chuyen da xong}
+        \State \Call{signal}{\texttt{mutex}} \Comment{mở khóa sau khi chuyến đã xong}
     \EndIf
 \EndProcedure
 \end{algorithmic}
