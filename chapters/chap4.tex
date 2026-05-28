@@ -43,19 +43,30 @@ Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{cap
 \begin{algorithmic}[1]
 \State \textbf{Shared:} \texttt{mutex} $\leftarrow 1$; \texttt{waitingH} $\leftarrow 0$; \texttt{waitingS} $\leftarrow 0$
 \State \textbf{Shared:} \texttt{hQueue} $\leftarrow 0$; \texttt{sQueue} $\leftarrow 0$
-\State \textbf{Shared (barrier 4):} \texttt{bMutex} $\leftarrow 1$; \texttt{bCount} $\leftarrow 0$; \texttt{bSem} $\leftarrow 0$
+\State \textbf{Shared (barrier 4):} \texttt{bMutex} $\leftarrow 1$; \texttt{bCount} $\leftarrow 0$; \texttt{bSem1} $\leftarrow 0$; \texttt{bSem2} $\leftarrow 0$
 
 \Function{Barrier4}{}
+    \Comment{Pha 1: đợi đủ 4 người đã được chọn lên thuyền}
     \State \Call{wait}{\texttt{bMutex}}
     \State $\texttt{bCount} \gets \texttt{bCount} + 1$
     \If{$\texttt{bCount} = 4$}
         \For{$i \gets 1$ \textbf{to} $4$}
-            \State \Call{signal}{\texttt{bSem}}
+            \State \Call{signal}{\texttt{bSem1}}
         \EndFor
-        \State $\texttt{bCount} \gets 0$
     \EndIf
     \State \Call{signal}{\texttt{bMutex}}
-    \State \Call{wait}{\texttt{bSem}}
+    \State \Call{wait}{\texttt{bSem1}}
+
+    \Comment{Pha 2: đợi cả 4 người rời barrier trước khi tái sử dụng}
+    \State \Call{wait}{\texttt{bMutex}}
+    \State $\texttt{bCount} \gets \texttt{bCount} - 1$
+    \If{$\texttt{bCount} = 0$}
+        \For{$i \gets 1$ \textbf{to} $4$}
+            \State \Call{signal}{\texttt{bSem2}}
+        \EndFor
+    \EndIf
+    \State \Call{signal}{\texttt{bMutex}}
+    \State \Call{wait}{\texttt{bSem2}}
 \EndFunction
 
 \Procedure{Hacker}{}
