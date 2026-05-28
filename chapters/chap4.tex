@@ -6,12 +6,124 @@
 
 Bài toán yêu cầu ghép một nhóm người lên thuyền theo các tổ hợp hợp lệ. Ví dụ biến thể Hackers and Serfs thường yêu cầu mỗi thuyền có bốn người, nhưng không được tạo ra tổ hợp gây mất cân bằng không hợp lệ.
 
-Các ý chính cần triển khai:
+\subsection*{Mô tả bài toán}
+Có hai loại tiến trình: \textit{hacker} và \textit{serf}. Mỗi thuyền chở đúng 4 người; chỉ các tổ hợp sau được phép khởi hành:
 \begin{itemize}
-    \item Xác định các loại tiến trình tham gia: hacker và serf.
-    \item Liệt kê các tổ hợp được phép lên thuyền.
-    \item Dùng mutex để bảo vệ bộ đếm số người đang chờ.
-    \item Dùng semaphore để đánh thức đúng nhóm được chọn.
+    \item 4 hacker (4H),
+    \item 4 serf (4S),
+    \item 2 hacker + 2 serf (2H2S).
+\end{itemize}
+Mục tiêu là ghép nhóm đúng điều kiện, không để một nhóm không hợp lệ lên thuyền, và đảm bảo chỉ khi đủ 4 người thì thuyền mới rời bến. Bài toán được trình bày phổ biến trong \cite{downey}.
+
+\subsection*{Tài nguyên găng}
+\begin{itemize}
+    \item Các biến đếm số người đang chờ: \texttt{waitingH}, \texttt{waitingS}.
+    \item Trạng thái ghép nhóm/đánh thức (quyết định ai được lên thuyền ở lượt hiện tại).
+\end{itemize}
+Các biến đếm phải được bảo vệ bởi mutex để tránh race condition khi nhiều người đến cùng lúc.
+
+\subsection*{Ràng buộc đồng bộ}
+\begin{itemize}
+    \item Một tiến trình chỉ được \textit{board} (lên thuyền) khi nó thuộc một nhóm hợp lệ vừa được chọn.
+    \item Đúng 4 tiến trình phải đồng bộ với nhau: không ai được “khởi hành” khi chưa đủ 4 người.
+    \item Không tiến trình nào bị đánh thức nhầm (không để 5 người cùng lên cho một lượt).
+\end{itemize}
+
+\subsection*{Hướng giải quyết}
+Ý tưởng chuẩn là dùng:
+\begin{itemize}
+    \item 1 mutex để bảo vệ \texttt{waitingH}, \texttt{waitingS} và thao tác chọn nhóm.
+    \item 2 semaphore hàng đợi: \texttt{hQueue} và \texttt{sQueue} để đánh thức đúng người được chọn.
+    \item 1 cơ chế \textit{barrier} cho nhóm 4 người (có thể cài bằng semaphore + bộ đếm) để đảm bảo cả 4 người đã lên thuyền trước khi “khởi hành”.
+\end{itemize}
+Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{captain} thực hiện hành động “row/khởi hành”.
+
+\captionof{algorithm}{River Crossing (Hackers and Serfs) -- giả mã dùng semaphore}
+\label{alg:river-crossing}
+\begin{algorithmic}[1]
+\State \textbf{Shared:} \texttt{mutex} $\leftarrow 1$; \texttt{waitingH} $\leftarrow 0$; \texttt{waitingS} $\leftarrow 0$
+\State \textbf{Shared:} \texttt{hQueue} $\leftarrow 0$; \texttt{sQueue} $\leftarrow 0$
+\State \textbf{Shared (barrier 4):} \texttt{bMutex} $\leftarrow 1$; \texttt{bCount} $\leftarrow 0$; \texttt{bSem} $\leftarrow 0$
+
+\Function{Barrier4}{}
+    \State \Call{wait}{\texttt{bMutex}}
+    \State $\texttt{bCount} \gets \texttt{bCount} + 1$
+    \If{$\texttt{bCount} = 4$}
+        \For{$i \gets 1$ \textbf{to} $4$}
+            \State \Call{signal}{\texttt{bSem}}
+        \EndFor
+        \State $\texttt{bCount} \gets 0$
+    \EndIf
+    \State \Call{signal}{\texttt{bMutex}}
+    \State \Call{wait}{\texttt{bSem}}
+\EndFunction
+
+\Procedure{Hacker}{}
+    \State $\texttt{captain} \gets false$
+    \State \Call{wait}{\texttt{mutex}}
+    \State $\texttt{waitingH} \gets \texttt{waitingH} + 1$
+    \If{$\texttt{waitingH} = 4$}
+        \For{$i \gets 1$ \textbf{to} $4$}
+            \State \Call{signal}{\texttt{hQueue}}
+        \EndFor
+        \State $\texttt{waitingH} \gets \texttt{waitingH} - 4$
+        \State $\texttt{captain} \gets true$
+    \ElsIf{$\texttt{waitingH} = 2$ \textbf{and} $\texttt{waitingS} \ge 2$}
+        \For{$i \gets 1$ \textbf{to} $2$}
+            \State \Call{signal}{\texttt{hQueue}}
+            \State \Call{signal}{\texttt{sQueue}}
+        \EndFor
+        \State $\texttt{waitingH} \gets \texttt{waitingH} - 2$; $\texttt{waitingS} \gets \texttt{waitingS} - 2$
+        \State $\texttt{captain} \gets true$
+    \Else
+        \State \Call{signal}{\texttt{mutex}} \Comment{khong phai captain thi nho mutex truoc khi cho}
+    \EndIf
+
+    \State \Call{wait}{\texttt{hQueue}} \Comment{chỉ được lên thuyền khi được chọn}
+    \State \Call{Board}{}
+    \State \Call{Barrier4}{}
+    \If{$\texttt{captain}$}
+        \State \Call{RowBoat}{}
+        \State \Call{signal}{\texttt{mutex}} \Comment{mo khoa sau khi chuyen da xong}
+    \EndIf
+\EndProcedure
+
+\Procedure{Serf}{}
+    \State $\texttt{captain} \gets false$
+    \State \Call{wait}{\texttt{mutex}}
+    \State $\texttt{waitingS} \gets \texttt{waitingS} + 1$
+    \If{$\texttt{waitingS} = 4$}
+        \For{$i \gets 1$ \textbf{to} $4$}
+            \State \Call{signal}{\texttt{sQueue}}
+        \EndFor
+        \State $\texttt{waitingS} \gets \texttt{waitingS} - 4$
+        \State $\texttt{captain} \gets true$
+    \ElsIf{$\texttt{waitingS} = 2$ \textbf{and} $\texttt{waitingH} \ge 2$}
+        \For{$i \gets 1$ \textbf{to} $2$}
+            \State \Call{signal}{\texttt{sQueue}}
+            \State \Call{signal}{\texttt{hQueue}}
+        \EndFor
+        \State $\texttt{waitingS} \gets \texttt{waitingS} - 2$; $\texttt{waitingH} \gets \texttt{waitingH} - 2$
+        \State $\texttt{captain} \gets true$
+    \Else
+        \State \Call{signal}{\texttt{mutex}} \Comment{khong phai captain thi nho mutex truoc khi cho}
+    \EndIf
+
+    \State \Call{wait}{\texttt{sQueue}}
+    \State \Call{Board}{}
+    \State \Call{Barrier4}{}
+    \If{$\texttt{captain}$}
+        \State \Call{RowBoat}{}
+        \State \Call{signal}{\texttt{mutex}} \Comment{mo khoa sau khi chuyen da xong}
+    \EndIf
+\EndProcedure
+\end{algorithmic}
+
+\subsection*{Lỗi cần tránh}
+\begin{itemize}
+    \item \textbf{Board sai tổ hợp:} quên bảo vệ biến đếm bằng mutex có thể dẫn đến chọn nhóm sai.
+    \item \textbf{Thiếu barrier:} nếu không có đồng bộ nhóm 4, có thể “khởi hành” khi chưa đủ người.
+    \item \textbf{Starvation:} nếu dòng người đến thiên lệch (toàn hacker hoặc toàn serf) có thể làm nhóm còn lại chờ rất lâu; có thể bổ sung chính sách chọn nhóm ưu tiên 2H2S khi khả dụng để giảm lệch.
 \end{itemize}
 
 \section{Bài toán Những người hút thuốc (Cigarette Smokers Problem) -- Chính}
@@ -20,12 +132,126 @@ Các ý chính cần triển khai:
 
 Bài toán gồm một tác nhân đặt hai trong ba nguyên liệu lên bàn, và người hút thuốc có nguyên liệu còn lại sẽ được hút. Mục tiêu là đánh thức đúng tiến trình phù hợp với cặp nguyên liệu hiện có.
 
-Các ý chính cần triển khai:
+\subsection*{Mô tả bài toán}
+Có 3 loại nguyên liệu: thuốc lá (T), giấy (P) và diêm (M). Có 1 \textit{agent} mỗi lượt đặt lên bàn đúng 2 nguyên liệu. Có 3 \textit{smoker}: mỗi smoker có sẵn một nguyên liệu và chỉ cần 2 nguyên liệu còn lại để cuốn thuốc và hút.
+
+Mục tiêu: ở mỗi lượt, \textbf{chỉ} smoker phù hợp với cặp nguyên liệu trên bàn được phép tiếp tục; các smoker còn lại phải chờ. Bài toán và lời giải kinh điển bằng semaphore được trình bày trong \cite{downey}.
+
+\subsection*{Tài nguyên găng}
 \begin{itemize}
-    \item Mô tả ba loại nguyên liệu và ba loại smoker.
-    \item Xác định bàn đặt nguyên liệu là tài nguyên găng.
-    \item Dùng semaphore để báo hiệu đúng smoker.
-    \item Tránh tình trạng nhiều smoker cùng lấy nguyên liệu một lúc.
+    \item Trạng thái “bàn” (có những nguyên liệu nào đang có sẵn).
+    \item Quyền được lấy nguyên liệu/hút ở mỗi lượt (tránh nhiều smoker cùng lấy).
+\end{itemize}
+
+\subsection*{Ràng buộc đồng bộ}
+\begin{itemize}
+    \item Agent chỉ được đặt nguyên liệu khi lượt trước đã kết thúc (một smoker đã hút xong).
+    \item Khi agent đặt (T,P) thì chỉ smoker có M được đánh thức; tương tự các cặp còn lại.
+    \item Không được bỏ lỡ tín hiệu (missed wakeup) khi hai nguyên liệu đến “lệch nhịp”.
+\end{itemize}
+
+\subsection*{Hướng giải quyết}
+Lời giải tiêu chuẩn dùng mô hình \textit{pushers}:
+\begin{itemize}
+    \item Agent phát tín hiệu cho từng nguyên liệu (3 semaphore T/P/M).
+    \item Ba tiến trình pusher quan sát nguyên liệu, ghép cặp dưới mutex thông qua các cờ $hasT$, $hasP$, $hasM$.
+    \item Khi đủ 2 nguyên liệu, pusher phát tín hiệu cho đúng smoker (3 semaphore cho 3 smoker).
+    \item Smoker hút xong sẽ \textit{signal} cho agent để bắt đầu lượt kế tiếp.
+\end{itemize}
+
+\captionof{algorithm}{Cigarette Smokers -- lời giải pushers (giả mã)}
+\label{alg:cigarette-smokers}
+\begin{algorithmic}[1]
+\State \textbf{Shared:} \texttt{agentSem} $\leftarrow 1$
+\State \textbf{Shared:} \texttt{tobacco} $\leftarrow 0$; \texttt{paper} $\leftarrow 0$; \texttt{match} $\leftarrow 0$
+\State \textbf{Shared:} \texttt{smokerT} $\leftarrow 0$; \texttt{smokerP} $\leftarrow 0$; \texttt{smokerM} $\leftarrow 0$
+\State \textbf{Shared:} \texttt{mutex} $\leftarrow 1$; \texttt{hasT} $\leftarrow false$; \texttt{hasP} $\leftarrow false$; \texttt{hasM} $\leftarrow false$
+
+\Procedure{Agent}{}
+    \While{true}
+        \State \Call{wait}{\texttt{agentSem}}
+        \State \Call{PlaceTwoIngredients}{} \Comment{ngẫu nhiên 2 trong 3}
+        \If{placed (T,P)} \State \Call{signal}{\texttt{tobacco}}; \Call{signal}{\texttt{paper}} \EndIf
+        \If{placed (T,M)} \State \Call{signal}{\texttt{tobacco}}; \Call{signal}{\texttt{match}} \EndIf
+        \If{placed (P,M)} \State \Call{signal}{\texttt{paper}}; \Call{signal}{\texttt{match}} \EndIf
+    \EndWhile
+\EndProcedure
+
+\Procedure{PusherT}{}
+    \While{true}
+        \State \Call{wait}{\texttt{tobacco}}
+        \State \Call{wait}{\texttt{mutex}}
+        \If{$\texttt{hasP}$}
+            \State $\texttt{hasP} \gets false$; \Call{signal}{\texttt{smokerM}}
+        \ElsIf{$\texttt{hasM}$}
+            \State $\texttt{hasM} \gets false$; \Call{signal}{\texttt{smokerP}}
+        \Else
+            \State $\texttt{hasT} \gets true$
+        \EndIf
+        \State \Call{signal}{\texttt{mutex}}
+    \EndWhile
+\EndProcedure
+
+\Procedure{PusherP}{}
+    \While{true}
+        \State \Call{wait}{\texttt{paper}}
+        \State \Call{wait}{\texttt{mutex}}
+        \If{$\texttt{hasT}$}
+            \State $\texttt{hasT} \gets false$; \Call{signal}{\texttt{smokerM}}
+        \ElsIf{$\texttt{hasM}$}
+            \State $\texttt{hasM} \gets false$; \Call{signal}{\texttt{smokerT}}
+        \Else
+            \State $\texttt{hasP} \gets true$
+        \EndIf
+        \State \Call{signal}{\texttt{mutex}}
+    \EndWhile
+\EndProcedure
+
+\Procedure{PusherM}{}
+    \While{true}
+        \State \Call{wait}{\texttt{match}}
+        \State \Call{wait}{\texttt{mutex}}
+        \If{$\texttt{hasT}$}
+            \State $\texttt{hasT} \gets false$; \Call{signal}{\texttt{smokerP}}
+        \ElsIf{$\texttt{hasP}$}
+            \State $\texttt{hasP} \gets false$; \Call{signal}{\texttt{smokerT}}
+        \Else
+            \State $\texttt{hasM} \gets true$
+        \EndIf
+        \State \Call{signal}{\texttt{mutex}}
+    \EndWhile
+\EndProcedure
+
+\Procedure{SmokerWithT}{}
+    \While{true}
+        \State \Call{wait}{\texttt{smokerT}} \Comment{có sẵn T, chờ P+M}
+        \State \Call{MakeCigaretteAndSmoke}{}
+        \State \Call{signal}{\texttt{agentSem}}
+    \EndWhile
+\EndProcedure
+
+\Procedure{SmokerWithP}{}
+    \While{true}
+        \State \Call{wait}{\texttt{smokerP}} \Comment{có sẵn P, chờ T+M}
+        \State \Call{MakeCigaretteAndSmoke}{}
+        \State \Call{signal}{\texttt{agentSem}}
+    \EndWhile
+\EndProcedure
+
+\Procedure{SmokerWithM}{}
+    \While{true}
+        \State \Call{wait}{\texttt{smokerM}} \Comment{có sẵn M, chờ T+P}
+        \State \Call{MakeCigaretteAndSmoke}{}
+        \State \Call{signal}{\texttt{agentSem}}
+    \EndWhile
+\EndProcedure
+\end{algorithmic}
+
+\subsection*{Lỗi cần tránh}
+\begin{itemize}
+    \item \textbf{Đánh thức sai smoker:} nếu agent signal trực tiếp mà không xử lý trạng thái bàn, dễ xảy ra tranh chấp hoặc tín hiệu bị “rơi”.
+    \item \textbf{Thiếu mutex cho cờ nguyên liệu:} các pusher cập nhật cờ mà không khóa sẽ gây race condition.
+    \item \textbf{Starvation do agent:} nếu agent chọn cặp nguyên liệu lệch (ví dụ liên tục thiếu M), smoker tương ứng sẽ chờ lâu; đây là đặc tính của nguồn vào, không phải lỗi đồng bộ.
 \end{itemize}
 
 \section{Bài toán Ông già Noel (Santa Claus Problem) -- Phương}
@@ -48,12 +274,81 @@ Các ý chính cần triển khai:
 
 Bài toán Child Care đặt ra ràng buộc tỷ lệ giữa số trẻ em và số người lớn trong phòng. Trẻ em chỉ được vào nếu sau khi vào vẫn thỏa mãn tỷ lệ an toàn; người lớn chỉ được rời đi nếu sau khi rời đi tỷ lệ vẫn hợp lệ.
 
-Các ý chính cần triển khai:
+\subsection*{Mô tả bài toán}
+Trong một khu trông trẻ có hai loại tiến trình: \textit{adult} (người lớn) và \textit{child} (trẻ em). Ràng buộc an toàn yêu cầu số trẻ em trong phòng luôn không vượt quá một bội số của số người lớn. Biến thể phổ biến đặt tỷ lệ:
+\[
+    children \le 3 \cdot adults.
+\]
+Mục tiêu: đồng bộ để mọi thao tác vào/ra đều giữ đúng tỷ lệ, đồng thời hệ thống vẫn có progress (không tự tạo deadlock do thiết kế sai điều kiện chờ).
+
+\subsection*{Tài nguyên găng}
 \begin{itemize}
-    \item Xác định biến đếm số trẻ em và số người lớn.
-    \item Bảo vệ thao tác cập nhật bộ đếm bằng mutex.
-    \item Dùng condition variable để chờ khi tỷ lệ không hợp lệ.
-    \item Phân tích trường hợp người lớn muốn rời phòng nhưng chưa đủ điều kiện.
+    \item Biến đếm $adults$ và $children$.
+    \item Hàng đợi chờ của trẻ muốn vào và người lớn muốn rời.
+\end{itemize}
+
+\subsection*{Ràng buộc đồng bộ}
+\begin{itemize}
+    \item \textbf{Trẻ vào:} chỉ được vào nếu sau khi vào vẫn thỏa $children + 1 \le 3 \cdot adults$.
+    \item \textbf{Người lớn rời:} chỉ được rời nếu sau khi rời vẫn thỏa $children \le 3 \cdot (adults - 1)$.
+    \item \textbf{Trẻ rời / người lớn vào} luôn hợp lệ (vì làm giảm hoặc nới ràng buộc), nhưng vẫn cần khóa để cập nhật biến đếm an toàn.
+\end{itemize}
+
+\subsection*{Hướng giải quyết}
+Cách trình bày rõ ràng là dùng monitor (mutex + condition variable):
+\begin{itemize}
+    \item Khóa $mutex$ bảo vệ cập nhật $adults, children$.
+    \item $canChildEnter$ để trẻ chờ khi tỷ lệ chưa đủ an toàn.
+    \item $canAdultLeave$ để người lớn chờ khi rời đi sẽ làm tỷ lệ bị vi phạm.
+\end{itemize}
+Sau khi một tiến trình vào/ra, cần \textit{signal/broadcast} để đánh thức các tiến trình đang chờ vì điều kiện có thể đã thay đổi.
+
+\captionof{algorithm}{Child Care (tỷ lệ $children \le 3 \cdot adults$) -- giả mã monitor}
+\label{alg:child-care}
+\begin{algorithmic}[1]
+\State \textbf{Shared:} \texttt{mutex}; condition \texttt{canChildEnter}, \texttt{canAdultLeave}
+\State \textbf{Shared:} \texttt{adults} $\leftarrow 0$; \texttt{children} $\leftarrow 0$
+
+\Procedure{AdultEnter}{}
+    \State \Call{lock}{\texttt{mutex}}
+    \State $\texttt{adults} \gets \texttt{adults} + 1$
+    \State \Call{broadcast}{\texttt{canChildEnter}}
+    \State \Call{unlock}{\texttt{mutex}}
+\EndProcedure
+
+\Procedure{AdultLeave}{}
+    \State \Call{lock}{\texttt{mutex}}
+    \While{$\texttt{children} > 3 \cdot (\texttt{adults} - 1)$}
+        \State \Call{wait}{\texttt{canAdultLeave}, \texttt{mutex}}
+    \EndWhile
+    \State $\texttt{adults} \gets \texttt{adults} - 1$
+    \State \Call{broadcast}{\texttt{canChildEnter}}
+    \State \Call{broadcast}{\texttt{canAdultLeave}}
+    \State \Call{unlock}{\texttt{mutex}}
+\EndProcedure
+
+\Procedure{ChildEnter}{}
+    \State \Call{lock}{\texttt{mutex}}
+    \While{$\texttt{children} + 1 > 3 \cdot \texttt{adults}$}
+        \State \Call{wait}{\texttt{canChildEnter}, \texttt{mutex}}
+    \EndWhile
+    \State $\texttt{children} \gets \texttt{children} + 1$
+    \State \Call{unlock}{\texttt{mutex}}
+\EndProcedure
+
+\Procedure{ChildLeave}{}
+    \State \Call{lock}{\texttt{mutex}}
+    \State $\texttt{children} \gets \texttt{children} - 1$
+    \State \Call{broadcast}{\texttt{canAdultLeave}}
+    \State \Call{unlock}{\texttt{mutex}}
+\EndProcedure
+\end{algorithmic}
+
+\subsection*{Lỗi cần tránh}
+\begin{itemize}
+    \item \textbf{Sai điều kiện chờ của người lớn rời:} phải kiểm tra điều kiện \textit{sau khi rời} (dùng $adults-1$).
+    \item \textbf{Quên đánh thức:} nếu trẻ rời mà không signal/broadcast $canAdultLeave$, người lớn có thể chờ vô hạn dù điều kiện đã hợp lệ.
+    \item \textbf{Không dùng vòng lặp khi wait:} luôn dùng \texttt{while} (không dùng \texttt{if}) để tránh đánh thức giả (spurious wakeup) và tránh sai do lịch trình.
 \end{itemize}
 
 \section{Bài toán tạo phân tử H2O -- Chưa phân công}
