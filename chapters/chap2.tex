@@ -2,7 +2,7 @@
 
 \section{Tiến trình, luồng và thực thi đồng thời}
 
-Trong hệ điều hành, \textit{tiến trình} là một chương trình đang được thực thi, có không gian địa chỉ, tài nguyên và trạng thái riêng. \textit{Luồng} là đơn vị thực thi nhẹ hơn, có thể chia sẻ không gian địa chỉ trong cùng một tiến trình. Khi nhiều tiến trình hoặc nhiều luồng cùng tồn tại, hệ điều hành phải liên tục chuyển đổi CPU giữa chúng, tạo ra cảm giác các công việc đang chạy song song.
+Trong hệ điều hành, \textit{tiến trình} là một chương trình đang được thực thi, có không gian địa chỉ, tài nguyên và trạng thái riêng. \textit{Luồng} là đơn vị thực thi nhẹ hơn, có thể chia sẻ không gian địa chỉ trong cùng một tiến trình. Khi nhiều tiến trình hoặc nhiều luồng cùng tồn tại, hệ điều hành phải liên tục chuyển đổi CPU giữa chúng, tạo ra cảm giác các công việc đang chạy song song \cite{silberschatz,tanenbaum}.
 
 Thực thi đồng thời giúp hệ thống tận dụng tốt tài nguyên, tăng khả năng phản hồi và cho phép nhiều tác vụ hoạt động cùng lúc. Tuy nhiên, nó cũng làm xuất hiện các lỗi phụ thuộc vào thứ tự chạy, đặc biệt khi nhiều luồng cùng truy cập dữ liệu hoặc tài nguyên dùng chung.
 
@@ -32,9 +32,9 @@ Một lời giải vùng găng thường cần đảm bảo ba yêu cầu:
 
 \textbf{Mutex} là khóa loại trừ lẫn nhau, thường dùng để bảo vệ vùng găng chỉ cho một luồng vào tại một thời điểm. Tiến trình phải khóa mutex trước khi vào vùng găng và mở khóa sau khi rời khỏi vùng găng.
 
-\textbf{Semaphore} là biến đồng bộ có thể dùng để đếm số tài nguyên còn khả dụng hoặc điều khiển thứ tự chạy giữa các tiến trình. Hai thao tác cơ bản là \texttt{wait} và \texttt{signal}. Semaphore nhị phân gần giống mutex, còn semaphore đếm phù hợp với các tài nguyên có nhiều bản sao.
+\textbf{Semaphore} là biến đồng bộ có thể dùng để đếm số tài nguyên còn khả dụng hoặc điều khiển thứ tự chạy giữa các tiến trình. Hai thao tác cơ bản là \texttt{wait} và \texttt{signal}. Semaphore nhị phân gần giống mutex, còn semaphore đếm phù hợp với các tài nguyên có nhiều bản sao \cite{dijkstra}.
 
-\textbf{Monitor} là mô hình đồng bộ ở mức trừu tượng cao hơn, gom dữ liệu dùng chung và các thao tác trên dữ liệu đó vào cùng một cấu trúc. Monitor thường đi kèm \textit{condition variable} để cho phép tiến trình ngủ và được đánh thức khi điều kiện cần thiết đã thỏa mãn.
+\textbf{Monitor} là mô hình đồng bộ ở mức trừu tượng cao hơn, gom dữ liệu dùng chung và các thao tác trên dữ liệu đó vào cùng một cấu trúc. Monitor thường đi kèm \textit{condition variable} để cho phép tiến trình ngủ và được đánh thức khi điều kiện cần thiết đã thỏa mãn \cite{hoare}.
 
 \section{Tiêu chí phân tích các bài toán}
 

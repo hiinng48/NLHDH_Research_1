@@ -4,30 +4,56 @@
 
 Bài toán yêu cầu ghép một nhóm người lên thuyền theo các tổ hợp hợp lệ. Ví dụ biến thể Hackers and Serfs thường yêu cầu mỗi thuyền có bốn người, nhưng không được tạo ra tổ hợp gây mất cân bằng không hợp lệ.
 
-\subsection*{Mô tả bài toán}
+\subsection{Mô tả bài toán}
 Có hai loại tiến trình: \textit{hacker} và \textit{serf}. Mỗi thuyền chở đúng 4 người; chỉ các tổ hợp sau được phép khởi hành:
 \begin{itemize}
     \item 4 hacker (4H),
     \item 4 serf (4S),
     \item 2 hacker + 2 serf (2H2S).
 \end{itemize}
-Mục tiêu là ghép nhóm đúng điều kiện, không để một nhóm không hợp lệ lên thuyền, và đảm bảo chỉ khi đủ 4 người thì thuyền mới rời bến. Bài toán được trình bày phổ biến trong \cite{downey}.
+Mục tiêu là ghép nhóm đúng điều kiện, không để một nhóm không hợp lệ lên thuyền, và đảm bảo chỉ khi đủ 4 người thì thuyền mới rời bến. Bài toán được trình bày phổ biến trong \cite{downey2016}.
 
-\subsection*{Tài nguyên găng}
+\subsection{Các thực thể tham gia}
+\begin{itemize}
+    \item \textbf{Hacker:} tiến trình đại diện cho người thuộc nhóm hacker, đến bến và chờ được ghép vào một thuyền hợp lệ.
+    \item \textbf{Serf:} tiến trình đại diện cho người thuộc nhóm serf, có hành vi tương tự nhưng thuộc loại khác để kiểm tra ràng buộc tổ hợp.
+    \item \textbf{Captain:} một tiến trình trong nhóm bốn người được chọn để thực hiện thao tác khởi hành sau khi barrier xác nhận cả nhóm đã lên thuyền.
+\end{itemize}
+
+\subsection{Tài nguyên dùng chung}
 \begin{itemize}
     \item Các biến đếm số người đang chờ: \texttt{waitingH}, \texttt{waitingS}.
     \item Trạng thái ghép nhóm/đánh thức (quyết định ai được lên thuyền ở lượt hiện tại).
 \end{itemize}
 Các biến đếm phải được bảo vệ bởi mutex để tránh race condition khi nhiều người đến cùng lúc.
 
-\subsection*{Ràng buộc đồng bộ}
+\subsection{Ràng buộc đồng bộ}
 \begin{itemize}
     \item Một tiến trình chỉ được \textit{board} (lên thuyền) khi nó thuộc một nhóm hợp lệ vừa được chọn.
     \item Đúng 4 tiến trình phải đồng bộ với nhau: không ai được “khởi hành” khi chưa đủ 4 người.
     \item Không tiến trình nào bị đánh thức nhầm (không để 5 người cùng lên cho một lượt).
 \end{itemize}
 
-\subsection*{Hướng giải quyết}
+\subsection{Phân tích lỗi tiềm ẩn}
+
+\subsubsection*{Race condition}
+Nếu quên bảo vệ các biến đếm bằng mutex, nhiều tiến trình đến cùng lúc có thể
+cùng nhìn thấy một trạng thái cũ và chọn sai tổ hợp, dẫn đến việc cho phép một
+nhóm không hợp lệ lên thuyền.
+
+\subsubsection*{Deadlock}
+Nguy cơ deadlock xuất hiện khi tiến trình giữ \texttt{mutex} trong lúc chờ trên
+\texttt{hQueue}, \texttt{sQueue} hoặc barrier. Lời giải nhả mutex trước khi các
+tiến trình không phải captain đi ngủ, còn captain chỉ giữ quyền điều phối cho
+đến khi nhóm hiện tại hoàn tất.
+
+\subsubsection*{Starvation / fairness}
+Nếu dòng người đến quá lệch, một loại tiến trình có thể chờ lâu. Có thể bổ
+sung chính sách ưu tiên tổ hợp 2H2S khi khả dụng để giảm lệch, nhưng lời giải
+cốt lõi chỉ bảo đảm đúng tổ hợp và không cho người thứ năm chen vào cùng
+chuyến.
+
+\subsection{Giải pháp đề xuất}
 Ý tưởng chuẩn là dùng:
 \begin{itemize}
     \item 1 mutex để bảo vệ \texttt{waitingH}, \texttt{waitingS} và thao tác chọn nhóm.
@@ -35,6 +61,8 @@ Các biến đếm phải được bảo vệ bởi mutex để tránh race cond
     \item 1 cơ chế \textit{barrier} cho nhóm 4 người (có thể cài bằng semaphore + bộ đếm) để đảm bảo cả 4 người đã lên thuyền trước khi “khởi hành”.
 \end{itemize}
 Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{captain} thực hiện hành động “row/khởi hành”.
+
+\subsection{Mã giả}
 
 \captionof{algorithm}{River Crossing (Hackers and Serfs) -- giả mã dùng semaphore}
 \label{alg:river-crossing}
@@ -128,36 +156,61 @@ Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{cap
 \EndProcedure
 \end{algorithmic}
 
-\subsection*{Lỗi cần tránh}
-\begin{itemize}
-    \item \textbf{Board sai tổ hợp:} quên bảo vệ biến đếm bằng mutex có thể dẫn đến chọn nhóm sai.
-    \item \textbf{Thiếu barrier:} nếu không có đồng bộ nhóm 4, có thể “khởi hành” khi chưa đủ người.
-    \item \textbf{Starvation:} nếu dòng người đến thiên lệch (toàn hacker hoặc toàn serf) có thể làm nhóm còn lại chờ rất lâu; có thể bổ sung chính sách chọn nhóm ưu tiên 2H2S khi khả dụng để giảm lệch.
-\end{itemize}
+\subsection{Kiểm chứng ngắn}
+
+Nếu bến có đủ 2 hacker và 2 serf, tiến trình cuối cùng làm điều kiện đủ sẽ phát đúng 2 tín hiệu cho \texttt{hQueue} và 2 tín hiệu cho \texttt{sQueue}. Bốn tiến trình này cùng đi qua \texttt{Barrier4}; chỉ khi cả bốn người đã lên thuyền thì captain mới gọi \texttt{RowBoat}. Trong mọi lượt, số tín hiệu phát ra đúng bằng số vị trí trên thuyền, nên không thể có người thứ năm chen vào cùng chuyến.
+
+\subsection{Kết luận bài toán}
+
+River Crossing minh họa đồng bộ theo điều kiện ghép nhóm. Mutex bảo vệ biến đếm, hai semaphore hàng đợi đánh thức đúng loại tiến trình, còn barrier bảo đảm nhóm đủ bốn người trước khi khởi hành. Lời giải đúng cần giữ bất biến mỗi chuyến chỉ thuộc một trong ba tổ hợp hợp lệ: 4H, 4S hoặc 2H2S.
 
 \section{Bài toán Những người hút thuốc (Cigarette Smokers Problem)}
 
 Bài toán gồm một tác nhân đặt hai trong ba nguyên liệu lên bàn, và người hút thuốc có nguyên liệu còn lại sẽ được hút. Mục tiêu là đánh thức đúng tiến trình phù hợp với cặp nguyên liệu hiện có.
 
-\subsection*{Mô tả bài toán}
+\subsection{Mô tả bài toán}
 Có 3 loại nguyên liệu: thuốc lá (T), giấy (P) và diêm (M). Có 1 \textit{agent} mỗi lượt đặt lên bàn đúng 2 nguyên liệu. Có 3 \textit{smoker}: mỗi smoker có sẵn một nguyên liệu và chỉ cần 2 nguyên liệu còn lại để cuốn thuốc và hút.
 
-Mục tiêu: ở mỗi lượt, \textbf{chỉ} smoker phù hợp với cặp nguyên liệu trên bàn được phép tiếp tục; các smoker còn lại phải chờ. Bài toán và lời giải kinh điển bằng semaphore được trình bày trong \cite{downey}.
+Mục tiêu: ở mỗi lượt, \textbf{chỉ} smoker phù hợp với cặp nguyên liệu trên bàn được phép tiếp tục; các smoker còn lại phải chờ. Bài toán và lời giải kinh điển bằng semaphore được trình bày trong \cite{downey2016}.
 
-\subsection*{Tài nguyên găng}
+\subsection{Các thực thể tham gia}
+\begin{itemize}
+    \item \textbf{Agent:} tiến trình đặt đúng hai nguyên liệu lên bàn ở mỗi lượt.
+    \item \textbf{Pusher:} các tiến trình trung gian ghi nhận nguyên liệu vừa xuất hiện và ghép cặp an toàn dưới mutex.
+    \item \textbf{Smoker:} ba tiến trình có sẵn lần lượt thuốc lá, giấy hoặc diêm; mỗi tiến trình chỉ được chạy khi hai nguyên liệu còn lại đã sẵn sàng.
+\end{itemize}
+
+\subsection{Tài nguyên dùng chung}
 \begin{itemize}
     \item Trạng thái “bàn” (có những nguyên liệu nào đang có sẵn).
     \item Quyền được lấy nguyên liệu/hút ở mỗi lượt (tránh nhiều smoker cùng lấy).
 \end{itemize}
 
-\subsection*{Ràng buộc đồng bộ}
+\subsection{Ràng buộc đồng bộ}
 \begin{itemize}
     \item Agent chỉ được đặt nguyên liệu khi lượt trước đã kết thúc (một smoker đã hút xong).
     \item Khi agent đặt (T,P) thì chỉ smoker có M được đánh thức; tương tự các cặp còn lại.
     \item Không được bỏ lỡ tín hiệu (missed wakeup) khi hai nguyên liệu đến “lệch nhịp”.
 \end{itemize}
 
-\subsection*{Hướng giải quyết}
+\subsection{Phân tích lỗi tiềm ẩn}
+
+\subsubsection*{Race condition}
+Nếu các pusher cập nhật cờ \texttt{hasT}, \texttt{hasP}, \texttt{hasM} mà
+không khóa, hai pusher có thể cùng quyết định trên trạng thái bàn không nhất
+quán và đánh thức sai smoker.
+
+\subsubsection*{Deadlock}
+Agent phải chờ \texttt{agentSem} trước khi đặt lượt mới và smoker phải
+\texttt{signal(agentSem)} sau khi hút xong. Nếu thiếu tín hiệu này, agent có
+thể ngủ vô hạn dù lượt trước đã kết thúc.
+
+\subsubsection*{Starvation / fairness}
+Nếu agent chọn cặp nguyên liệu lệch trong thời gian dài, smoker tương ứng có
+thể chờ lâu. Đây là đặc tính của nguồn vào; phần đồng bộ chỉ bảo đảm mỗi lượt
+có đúng một smoker phù hợp được đánh thức.
+
+\subsection{Giải pháp đề xuất}
 Lời giải tiêu chuẩn dùng mô hình \textit{pushers}:
 \begin{itemize}
     \item Agent phát tín hiệu cho từng nguyên liệu (3 semaphore T/P/M).
@@ -165,6 +218,8 @@ Lời giải tiêu chuẩn dùng mô hình \textit{pushers}:
     \item Khi đủ 2 nguyên liệu, pusher phát tín hiệu cho đúng smoker (3 semaphore cho 3 smoker).
     \item Smoker hút xong sẽ \textit{signal} cho agent để bắt đầu lượt kế tiếp.
 \end{itemize}
+
+\subsection{Mã giả}
 
 \captionof{algorithm}{Cigarette Smokers -- lời giải pushers (giả mã)}
 \label{alg:cigarette-smokers}
@@ -254,12 +309,13 @@ Lời giải tiêu chuẩn dùng mô hình \textit{pushers}:
 \EndProcedure
 \end{algorithmic}
 
-\subsection*{Lỗi cần tránh}
-\begin{itemize}
-    \item \textbf{Đánh thức sai smoker:} nếu agent signal trực tiếp mà không xử lý trạng thái bàn, dễ xảy ra tranh chấp hoặc tín hiệu bị “rơi”.
-    \item \textbf{Thiếu mutex cho cờ nguyên liệu:} các pusher cập nhật cờ mà không khóa sẽ gây race condition.
-    \item \textbf{Starvation do agent:} nếu agent chọn cặp nguyên liệu lệch (ví dụ liên tục thiếu M), smoker tương ứng sẽ chờ lâu; đây là đặc tính của nguồn vào, không phải lỗi đồng bộ.
-\end{itemize}
+\subsection{Kiểm chứng ngắn}
+
+Khi agent đặt hai nguyên liệu, mỗi nguyên liệu chỉ đánh thức pusher tương ứng. Các pusher cập nhật các cờ \texttt{hasT}, \texttt{hasP}, \texttt{hasM} trong vùng khóa, nên chỉ một pusher có thể quyết định cặp nguyên liệu hoàn chỉnh. Pusher đó phát đúng một tín hiệu đến smoker còn thiếu nguyên liệu thứ ba; sau khi smoker hút xong, \texttt{agentSem} mới được mở cho lượt tiếp theo.
+
+\subsection{Kết luận bài toán}
+
+Cigarette Smokers cho thấy việc đánh thức trực tiếp theo sự kiện đơn lẻ có thể gây lost wakeup nếu không lưu trạng thái trung gian. Mẫu pusher tách việc ghi nhận nguyên liệu khỏi việc đánh thức smoker, nhờ đó bảo đảm mỗi lượt chỉ có đúng một smoker phù hợp được chạy và agent không ghi đè lên lượt chưa hoàn tất.
 
 \newpage
 \section{Bài toán Ông già Noel (Santa Claus Problem)}
@@ -270,9 +326,9 @@ Lời giải tiêu chuẩn dùng mô hình \textit{pushers}:
 % Section 5.5: The Santa Claus Problem, pp. 139--142.
 % =========================================================
 
-\subsection{Mô tả bài toán (Problem Description)}
+\subsection{Mô tả bài toán}
 
-\subsubsection{Cốt truyện và bối cảnh}
+\subsubsection*{Cốt truyện và bối cảnh}
 
 Bài toán Ông già Noel (\textit{Santa Claus Problem}) là một bài toán
 đồng bộ tiến trình kinh điển. Trong bài toán, Santa Claus đang ngủ tại
@@ -294,7 +350,7 @@ kiện, các tuần lộc được xử lý theo nhóm 9 con, các chú lùn đ�
 theo nhóm 3 người, và không có nhóm chú lùn mới chen vào trước khi nhóm
 hiện tại đã thực hiện việc nhận trợ giúp.
 
-\subsubsection{Các thực thể tham gia (Entities/Threads)}
+\subsection{Các thực thể tham gia}
 
 \paragraph{Santa Claus.} Santa là tiến trình trung tâm. Santa ngủ khi chưa có yêu cầu hợp lệ.
 Khi được đánh thức, Santa kiểm tra xem có đủ tuần lộc hay không trước;
@@ -325,7 +381,7 @@ hình thành tại một thời điểm.
 3 người $\rightarrow$ Nhận trợ giúp $\rightarrow$ Làm việc tiếp}
 \end{center}
 
-\subsubsection{Tài nguyên dùng chung (Shared Resources)}
+\subsection{Tài nguyên dùng chung}
 
 Các tài nguyên dùng chung trong bài toán gồm:
 
@@ -343,7 +399,7 @@ yêu cầu.
 Hai biến \texttt{reindeer} và \texttt{elves} phải được bảo vệ, vì nhiều
 tiến trình có thể cùng muốn cập nhật chúng.
 
-\subsubsection{Sơ đồ minh họa đề xuất (Visual Aid)}
+\subsubsection*{Sơ đồ minh họa}
 
 \begin{figure}[H]
 \centering
@@ -379,9 +435,9 @@ tiến trình có thể cùng muốn cập nhật chúng.
 
 % =========================================================
 
-\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+\subsection{Ràng buộc đồng bộ}
 
-\subsubsection{Loại trừ tương hỗ (Mutual Exclusion)}
+\subsubsection*{Loại trừ tương hỗ}
 
 Đoạn găng (\textit{critical section}) của bài toán nằm ở các thao tác
 đọc và cập nhật hai biến đếm dùng chung:
@@ -403,7 +459,7 @@ thời điểm.
 Vì vậy, giải pháp sử dụng semaphore \texttt{mutex} như một khóa loại
 trừ tương hỗ để bảo vệ hai biến trạng thái.
 
-\subsubsection{Đồng bộ điều kiện (Condition Synchronization)}
+\subsubsection*{Đồng bộ điều kiện}
 
 \paragraph{Quan hệ chờ -- đánh thức của Santa.}
 
@@ -436,20 +492,19 @@ chú lùn hiện tại.
 \texttt{elfTex}, cho phép chú lùn tiếp theo vào.
 \item Chú lùn thứ ba đánh thức Santa nhưng không mở lại
 \texttt{elfTex}; do đó các chú lùn đến sau bị chặn bên ngoài.
-\item Sau khi nhóm đã đủ ba người, ba chú lùn thực hiện
-\texttt{getHelp()}, trong khi Santa thực hiện
-\texttt{helpElves()}.
+\item Sau khi nhóm đã đủ ba người, Santa thực hiện
+\texttt{helpElves()} rồi phát ba tín hiệu trên \texttt{helpSem} để cho
+ba chú lùn trong nhóm hiện tại thực hiện \texttt{getHelp()}.
 \item Chỉ sau khi cả ba chú lùn hiện tại đã hoàn tất
 \texttt{getHelp()}, chú lùn cuối cùng rời nhóm mới mở lại
 \texttt{elfTex} cho nhóm kế tiếp.
 \end{itemize}
 
-Theo lời giải của Downey, không cần một semaphore riêng để các chú lùn
-chờ Santa phát tín hiệu. Yêu cầu của bài toán là ngăn nhóm mới vào trước
-khi ba chú lùn hiện tại đã gọi \texttt{getHelp()}; nhiệm vụ này được
-thực hiện bởi \texttt{elfTex} \cite[Sec.~5.5.1--5.5.2, pp.~139--142]{downey2016}.
+Semaphore \texttt{helpSem} làm rõ quan hệ đồng bộ giữa Santa và nhóm
+chú lùn: chú lùn không tự đi qua \texttt{getHelp()} ngay sau khi đánh
+thức Santa, mà phải chờ Santa xử lý yêu cầu của nhóm hiện tại.
 
-\subsubsection{Giới hạn năng lực (Capacity Limits)}
+\subsubsection*{Giới hạn năng lực}
 
 Bài toán có hai giới hạn bắt buộc:
 
@@ -461,7 +516,7 @@ Bài toán có hai giới hạn bắt buộc:
 Khi chú lùn thứ ba gia nhập nhóm, \texttt{elfTex} không được mở lại cho
 đến khi cả ba chú lùn đã thực hiện xong \texttt{getHelp()}.
 
-\subsubsection{Quy tắc ưu tiên và công bằng (Fairness/Priority)}
+\subsubsection*{Công bằng và ưu tiên}
 
 Bài toán quy định tuần lộc có mức ưu tiên cao hơn chú lùn. Vì vậy, sau
 khi được đánh thức, Santa kiểm tra yêu cầu của tuần lộc trước:
@@ -481,9 +536,9 @@ giải vẫn giữ nguyên ưu tiên cho tuần lộc theo đặc tả của bà
 
 % =========================================================
 
-\subsection{Phân tích thử thách và lỗi tiềm ẩn (Challenges \& Pitfalls)}
+\subsection{Phân tích lỗi tiềm ẩn}
 
-\subsubsection{Nguy cơ Race Condition}
+\subsubsection*{Race condition}
 
 Giả sử hiện tại biến \texttt{elves = 1}. Hai chú lùn mới đến gần như
 đồng thời và cùng muốn tham gia nhóm. Nếu không có mutex, có thể xảy ra
@@ -503,7 +558,7 @@ lùn trong nhóm. Santa sẽ không được đánh thức đúng thời điểm
 Tương tự, nếu các tuần lộc cập nhật \texttt{reindeer} mà không có khóa,
 hệ thống có thể ghi nhận sai số tuần lộc đã quay về.
 
-\subsubsection{Đoạn mã lỗi minh họa (Naive Solution)}
+\subsubsection*{Đoạn mã lỗi minh họa}
 
 \begin{lstlisting}
 // Giai phap sai: khong co mutex va khong khoa nhom elves
@@ -523,7 +578,7 @@ getHelp();
 mutex. Ngoài ra, không có \texttt{elfTex} để đóng cửa nhóm sau khi đủ
 ba chú lùn; vì vậy chú lùn thứ tư có thể chen vào nhóm hiện tại.
 
-\subsubsection{Phân tích Deadlock}
+\subsubsection*{Deadlock}
 
 Một giải pháp sai có thể để chú lùn giữ \texttt{mutex} trong khi chờ
 Santa thực hiện công việc:
@@ -549,7 +604,7 @@ Lời giải đề xuất tránh tình huống trên vì chú lùn giải phóng
 \texttt{mutex} trước khi thực hiện \texttt{getHelp()}, còn Santa chỉ
 lấy mutex trong thời gian kiểm tra và xử lý điều kiện.
 
-\subsubsection{Phân tích Starvation và Livelock}
+\subsubsection*{Starvation / fairness}
 
 Tuần lộc được ưu tiên hơn chú lùn theo đúng yêu cầu bài toán. Do đó, nếu
 hai loại yêu cầu cùng tồn tại, Santa sẽ xử lý tuần lộc trước.
@@ -564,9 +619,9 @@ nhường quyền mà không tiến triển.
 
 % =========================================================
 
-\subsection{Giải pháp và mã giả chi tiết (Proposed Solution \& Pseudocode)}
+\subsection{Giải pháp đề xuất}
 
-\subsubsection{Chiến lược tiếp cận}
+\subsubsection*{Chiến lược tiếp cận}
 
 Giải pháp trong phần này được trình bày lại dựa trên lời giải semaphore
 của Downey trong mục \textit{Santa problem solution}
@@ -580,14 +635,18 @@ của Downey trong mục \textit{Santa problem solution}
 bị xe.
 \item Một semaphore \texttt{elfTex} để kiểm soát việc hình thành
 từng nhóm 3 chú lùn.
+\item Một semaphore \texttt{helpSem} để ba chú lùn trong nhóm hiện tại
+chỉ thực hiện \texttt{getHelp()} sau khi Santa đã gọi
+\texttt{helpElves()}.
 \end{itemize}
 
-Giải pháp không sử dụng semaphore \texttt{helpSem}. Theo đặc tả và lời
-giải của Downey, sau khi nhóm 3 chú lùn đã đánh thức Santa, Santa gọi
-\texttt{helpElves()} còn ba chú lùn gọi \texttt{getHelp()}; semaphore
-\texttt{elfTex} bảo đảm nhóm mới không thể gia nhập quá sớm \cite[Sec.~5.5, pp.~137--142]{downey2016}.
+Semaphore \texttt{elfTex} bảo đảm nhóm mới không thể gia nhập quá sớm,
+còn \texttt{helpSem} bảo đảm nhóm hiện tại không nhận trợ giúp trước khi
+Santa thật sự xử lý yêu cầu.
 
-\subsubsection{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
 
 \begin{lstlisting}
 int elves = 0;                // So chu lun trong nhom hien tai
@@ -596,10 +655,11 @@ int reindeer = 0;             // So tuan loc da quay ve va dang cho
 semaphore santaSem = 0;       // Santa ngu va cho tin hieu danh thuc
 semaphore reindeerSem = 0;    // Tuan loc cho Santa chuan bi xe
 semaphore elfTex = 1;         // Cua vao cho tung nhom 3 chu lun
+semaphore helpSem = 0;        // Santa cho phep tung chu lun nhan tro giup
 semaphore mutex = 1;          // Bao ve hai bien elves va reindeer
 \end{lstlisting}
 
-\subsubsection{Mã giả cho Santa}
+\subsubsection*{Mã giả cho Santa}
 
 \begin{lstlisting}
 Santa() {
@@ -625,7 +685,11 @@ wait(santaSem);
     else if (elves == 3) {
         helpElves();
         // Santa giup nhom 3 chu lun hien tai.
-        // Khong phat semaphore rieng cho cac chu lun.
+
+        for (int i = 1; i <= 3; i++) {
+            signal(helpSem);
+            // Cho phep tung chu lun trong nhom goi getHelp().
+        }
     }
 
     signal(mutex);
@@ -635,7 +699,7 @@ wait(santaSem);
 }
 \end{lstlisting}
 
-\subsubsection{Mã giả cho tuần lộc}
+\subsubsection*{Mã giả cho tuần lộc}
 
 \begin{lstlisting}
 Reindeer() {
@@ -667,7 +731,7 @@ returnFromVacation();
 }
 \end{lstlisting}
 
-\subsubsection{Mã giả cho chú lùn}
+\subsubsection*{Mã giả cho chú lùn}
 
 \begin{lstlisting}
 Elf() {
@@ -701,9 +765,11 @@ makeToys();
     signal(mutex);
     // Mo khoa sau khi cap nhat bien elves.
 
+    wait(helpSem);
+    // Cho den khi Santa thuc su xu ly nhom hien tai.
+
     getHelp();
     // Chu lun thuc hien viec nhan tro giup.
-    // Theo Downey, khong can cho mot tin hieu rieng tu Santa.
 
     wait(mutex);
     // Khoa bien elves truoc khi roi nhom hien tai.
@@ -723,7 +789,7 @@ makeToys();
 }
 \end{lstlisting}
 
-\subsubsection{Kiểm chứng (Walkthrough/Dry-run)}
+\subsection{Kiểm chứng ngắn}
 
 Giả sử lần lượt có ba chú lùn gặp khó khăn. Chú lùn thứ nhất và thứ hai
 tăng biến \texttt{elves}, sau đó mở lại \texttt{elfTex} để cho phép chú
@@ -731,10 +797,11 @@ lùn kế tiếp gia nhập nhóm. Khi chú lùn thứ ba đi vào,
 \texttt{elves = 3}; chú lùn này đánh thức Santa nhưng không mở lại
 \texttt{elfTex}. Vì vậy, chú lùn thứ tư không thể chen vào nhóm hiện tại.
 
-Sau khi nhóm đã đủ ba người, các chú lùn thực hiện
-\texttt{getHelp()} và Santa thực hiện \texttt{helpElves()}. Mỗi chú lùn
-sau khi hoàn tất \texttt{getHelp()} sẽ giảm biến \texttt{elves} trong
-vùng được bảo vệ bởi \texttt{mutex}. Chú lùn cuối cùng làm
+Sau khi nhóm đã đủ ba người, các chú lùn chờ trên \texttt{helpSem}.
+Santa thức dậy, gọi \texttt{helpElves()} và phát ba tín hiệu
+\texttt{helpSem}; khi đó ba chú lùn trong nhóm hiện tại mới thực hiện
+\texttt{getHelp()}. Mỗi chú lùn sau khi hoàn tất \texttt{getHelp()} sẽ
+giảm biến \texttt{elves} trong vùng được bảo vệ bởi \texttt{mutex}. Chú lùn cuối cùng làm
 \texttt{elves = 0} rồi mở lại \texttt{elfTex}; từ thời điểm đó nhóm mới
 mới có thể được hình thành.
 
@@ -757,27 +824,51 @@ ba người.
 
 Bài toán Child Care đặt ra ràng buộc tỷ lệ giữa số trẻ em và số người lớn trong phòng. Trẻ em chỉ được vào nếu sau khi vào vẫn thỏa mãn tỷ lệ an toàn; người lớn chỉ được rời đi nếu sau khi rời đi tỷ lệ vẫn hợp lệ.
 
-\subsection*{Mô tả bài toán}
+\subsection{Mô tả bài toán}
 Trong một khu trông trẻ có hai loại tiến trình: \textit{adult} (người lớn) và \textit{child} (trẻ em). Ràng buộc an toàn yêu cầu số trẻ em trong phòng luôn không vượt quá một bội số của số người lớn. Biến thể phổ biến đặt tỷ lệ:
 \[
     children \le 3 \cdot adults.
 \]
 Mục tiêu: đồng bộ để mọi thao tác vào/ra đều giữ đúng tỷ lệ, đồng thời hệ thống vẫn có progress (không tự tạo deadlock do thiết kế sai điều kiện chờ).
 
-\subsection*{Tài nguyên găng}
+\subsection{Các thực thể tham gia}
+\begin{itemize}
+    \item \textbf{Adult:} tiến trình người lớn, có thể vào phòng hoặc xin rời phòng.
+    \item \textbf{Child:} tiến trình trẻ em, có thể vào phòng nếu tỷ lệ an toàn vẫn được giữ và có thể rời phòng bất kỳ lúc nào.
+    \item \textbf{Monitor phòng trông trẻ:} thành phần bảo vệ biến đếm và điều kiện chờ để mọi thao tác vào/ra được kiểm tra nguyên tử.
+\end{itemize}
+
+\subsection{Tài nguyên dùng chung}
 \begin{itemize}
     \item Biến đếm $adults$ và $children$.
     \item Hàng đợi chờ của trẻ muốn vào và người lớn muốn rời.
 \end{itemize}
 
-\subsection*{Ràng buộc đồng bộ}
+\subsection{Ràng buộc đồng bộ}
 \begin{itemize}
     \item \textbf{Trẻ vào:} chỉ được vào nếu sau khi vào vẫn thỏa $children + 1 \le 3 \cdot adults$.
     \item \textbf{Người lớn rời:} chỉ được rời nếu sau khi rời vẫn thỏa $children \le 3 \cdot (adults - 1)$.
     \item \textbf{Trẻ rời / người lớn vào} luôn hợp lệ (vì làm giảm hoặc nới ràng buộc), nhưng vẫn cần khóa để cập nhật biến đếm an toàn.
 \end{itemize}
 
-\subsection*{Hướng giải quyết}
+\subsection{Phân tích lỗi tiềm ẩn}
+
+\subsubsection*{Race condition}
+Nếu cập nhật \texttt{adults} và \texttt{children} ngoài monitor, hai tiến trình
+có thể cùng kiểm tra điều kiện trên dữ liệu cũ và làm sai bất biến
+$children \le 3 \cdot adults$.
+
+\subsubsection*{Deadlock}
+Người lớn rời phòng phải chờ bằng condition variable của monitor, tức là thao
+tác \texttt{wait} tạm nhả mutex. Nếu chờ mà vẫn giữ mutex, người lớn khác hoặc
+trẻ rời phòng không thể cập nhật trạng thái để làm điều kiện trở thành đúng.
+
+\subsubsection*{Starvation / fairness}
+Nếu quên đánh thức sau khi người lớn vào hoặc trẻ rời, tiến trình đang chờ có
+thể ngủ vô hạn dù điều kiện đã hợp lệ. Ngoài ra, luôn dùng \texttt{while} khi
+chờ để chống đánh thức giả và lịch trình xen kẽ bất lợi.
+
+\subsection{Giải pháp đề xuất}
 Cách trình bày rõ ràng là dùng monitor (mutex + condition variable):
 \begin{itemize}
     \item Khóa $mutex$ bảo vệ cập nhật $adults, children$.
@@ -785,6 +876,8 @@ Cách trình bày rõ ràng là dùng monitor (mutex + condition variable):
     \item $canAdultLeave$ để người lớn chờ khi rời đi sẽ làm tỷ lệ bị vi phạm.
 \end{itemize}
 Sau khi một tiến trình vào/ra, cần \textit{signal/broadcast} để đánh thức các tiến trình đang chờ vì điều kiện có thể đã thay đổi.
+
+\subsection{Mã giả}
 
 \captionof{algorithm}{Child Care (tỷ lệ $children \le 3 \cdot adults$) -- giả mã monitor}
 \label{alg:child-care}
@@ -796,6 +889,7 @@ Sau khi một tiến trình vào/ra, cần \textit{signal/broadcast} để đán
     \State \Call{lock}{\texttt{mutex}}
     \State $\texttt{adults} \gets \texttt{adults} + 1$
     \State \Call{broadcast}{\texttt{canChildEnter}}
+    \State \Call{broadcast}{\texttt{canAdultLeave}}
     \State \Call{unlock}{\texttt{mutex}}
 \EndProcedure
 
@@ -822,26 +916,502 @@ Sau khi một tiến trình vào/ra, cần \textit{signal/broadcast} để đán
 \Procedure{ChildLeave}{}
     \State \Call{lock}{\texttt{mutex}}
     \State $\texttt{children} \gets \texttt{children} - 1$
+    \State \Call{broadcast}{\texttt{canChildEnter}}
     \State \Call{broadcast}{\texttt{canAdultLeave}}
     \State \Call{unlock}{\texttt{mutex}}
 \EndProcedure
 \end{algorithmic}
 
-\subsection*{Lỗi cần tránh}
-\begin{itemize}
-    \item \textbf{Sai điều kiện chờ của người lớn rời:} phải kiểm tra điều kiện \textit{sau khi rời} (dùng $adults-1$).
-    \item \textbf{Quên đánh thức:} nếu trẻ rời mà không signal/broadcast $canAdultLeave$, người lớn có thể chờ vô hạn dù điều kiện đã hợp lệ.
-    \item \textbf{Không dùng vòng lặp khi wait:} luôn dùng \texttt{while} (không dùng \texttt{if}) để tránh đánh thức giả (spurious wakeup) và tránh sai do lịch trình.
-\end{itemize}
+\subsection{Kiểm chứng ngắn}
+
+Mọi thay đổi lên \texttt{adults} và \texttt{children} đều diễn ra khi giữ \texttt{mutex}, nên không có hai tiến trình đồng thời cập nhật sai biến đếm. Trẻ chỉ vào khi điều kiện sau khi vào vẫn thỏa $children + 1 \le 3 \cdot adults$; người lớn chỉ rời khi điều kiện sau khi rời vẫn thỏa $children \le 3 \cdot (adults - 1)$. Khi người lớn vào, cả trẻ đang chờ và người lớn đang chờ rời đi đều có thể được đánh thức vì mẫu số an toàn tăng lên. Khi trẻ rời, cả hai condition variable cũng được đánh thức vì việc giảm \texttt{children} có thể đồng thời cho phép trẻ khác vào hoặc người lớn rời đi.
+
+\subsection{Kết luận bài toán}
+
+Child Care là bài toán monitor điển hình với bất biến an toàn $children \le 3 \cdot adults$. Lời giải đúng cần kiểm tra điều kiện bằng vòng lặp, cập nhật biến đếm trong vùng khóa và đánh thức lại các hàng đợi liên quan sau mỗi thay đổi có thể làm điều kiện chờ trở thành đúng.
 
 \section{Bài toán Ghép đội đấu hạng (Multiplayer Matchmaking Problem)}
 
-Bài toán mô phỏng hệ thống ghép trận trong game nhiều người chơi. Người chơi phải chờ cho đến khi đủ số lượng hoặc đủ điều kiện xếp hạng để tạo một trận đấu hợp lệ.
+\subsection{Mô tả bài toán}
 
-Các ý chính cần triển khai:
+\subsubsection*{Cốt truyện và bối cảnh}
+
+Bài toán Ghép đội đấu hạng mô phỏng một hệ thống ghép trận trong trò chơi
+nhiều người chơi trực tuyến. Mỗi người chơi gửi yêu cầu tìm trận, mang theo
+một số thuộc tính như điểm xếp hạng, vai trò mong muốn, khu vực máy chủ và thời
+điểm bắt đầu chờ. Hệ thống phải chọn một nhóm người chơi đủ điều kiện để tạo
+thành một trận đấu hợp lệ.
+
+Trong báo cáo này, ta xét một biến thể 5v5 có ba vai trò cơ bản:
+\textit{Tank}, \textit{Damage} và \textit{Support}. Mỗi đội cần đúng:
+
+\[
+    1 \text{ Tank} + 3 \text{ Damage} + 1 \text{ Support}.
+\]
+
+Vì một trận gồm hai đội, hệ thống cần chọn tổng cộng:
+
+\[
+    2 \text{ Tank} + 6 \text{ Damage} + 2 \text{ Support}.
+\]
+
+Ngoài ràng buộc số lượng và vai trò, người chơi trong cùng trận chỉ được ghép
+nếu điểm xếp hạng của họ nằm trong một khoảng chênh lệch cho phép. Khoảng này
+có thể mở rộng dần theo thời gian chờ để tránh người chơi bị kẹt quá lâu.
+
+Bài toán này không phải là một bài toán semaphore kinh điển với một lời giải
+duy nhất. Nó là một mô hình thực tế dùng để áp dụng các nguyên lý đồng bộ:
+bảo vệ hàng đợi dùng chung, chọn nhóm một cách nguyên tử, đánh thức đúng người
+được chọn và bảo đảm những người không được chọn tiếp tục chờ trong trạng thái
+nhất quán.
+
+\subsection{Các thực thể tham gia}
+
+\paragraph{Người chơi (Player Thread).}
+Mỗi người chơi là một tiến trình hoặc luồng gửi yêu cầu tìm trận. Người chơi
+cung cấp thông tin về rank, vai trò và khu vực, sau đó chờ đến khi được hệ
+thống đưa vào một trận cụ thể.
+
+\begin{center}
+\texttt{Gửi yêu cầu $\rightarrow$ Vào hàng đợi $\rightarrow$ Chờ ghép trận
+$\rightarrow$ Nhận matchId $\rightarrow$ Vào phòng đấu}
+\end{center}
+
+\paragraph{Bộ ghép trận (Matchmaker).}
+Bộ ghép trận là tiến trình điều phối. Nó quan sát các hàng đợi người chơi, tìm
+một nhóm thỏa điều kiện, lấy nhóm đó ra khỏi hàng đợi và đánh thức đúng các
+người chơi được chọn.
+
+\begin{center}
+\texttt{Chờ yêu cầu $\rightarrow$ Quét hàng đợi $\rightarrow$ Chọn nhóm hợp lệ
+$\rightarrow$ Tạo trận $\rightarrow$ Đánh thức người chơi}
+\end{center}
+
+\paragraph{Phòng đấu (Match Room).}
+Phòng đấu là kết quả sau khi ghép thành công. Mỗi phòng có một định danh
+\texttt{matchId}, danh sách người chơi và thông tin đội. Sau khi một người chơi
+được gán vào phòng, yêu cầu của người đó không còn nằm trong hàng đợi tìm trận.
+
+\subsection{Tài nguyên dùng chung}
+
+Các tài nguyên dùng chung trong bài toán gồm:
+
 \begin{itemize}
-    \item Xác định hàng đợi người chơi theo rank hoặc vai trò.
-    \item Thiết kế điều kiện tạo phòng đấu.
-    \item Bảo vệ hàng đợi matchmaking bằng mutex.
-    \item Đánh thức đúng nhóm người chơi khi trận đấu được tạo.
+    \item Các hàng đợi \texttt{queue[role]} chứa người chơi đang chờ theo vai trò.
+    \item Trạng thái từng yêu cầu: đang chờ, đã được chọn, đã hủy hoặc đã vào trận.
+    \item Bộ đếm và danh sách người chơi đang chờ theo rank/role/khu vực.
+    \item Bộ sinh \texttt{matchId} cho các trận mới.
+    \item Semaphore hoặc condition variable riêng của từng người chơi để chờ
+    kết quả ghép trận.
 \end{itemize}
+
+Tất cả cấu trúc này phải được bảo vệ bởi \texttt{mutex} hoặc nằm bên trong một
+monitor. Nếu không, hai tiến trình matchmaker có thể cùng chọn một người chơi
+cho hai trận khác nhau, hoặc một người chơi vừa hủy tìm trận vẫn bị đưa vào
+phòng đấu.
+
+\subsection{Ràng buộc đồng bộ}
+
+\subsubsection*{Loại trừ tương hỗ}
+
+Đoạn găng của bài toán nằm ở các thao tác:
+
+\begin{itemize}
+    \item Thêm yêu cầu mới vào hàng đợi.
+    \item Xóa yêu cầu khi người chơi hủy tìm trận.
+    \item Quét và chọn nhóm người chơi hợp lệ.
+    \item Gán \texttt{matchId} cho nhóm đã chọn.
+    \item Đánh dấu trạng thái người chơi từ \texttt{WAITING} sang
+    \texttt{MATCHED}.
+\end{itemize}
+
+Đặc biệt, thao tác chọn nhóm và xóa nhóm khỏi hàng đợi phải là một hành động
+nguyên tử. Nếu không, hai matchmaker chạy đồng thời có thể cùng nhìn thấy một
+nhóm hợp lệ và cùng sử dụng một vài người chơi trùng nhau.
+
+\subsubsection*{Đồng bộ điều kiện}
+
+Người chơi sau khi vào hàng đợi phải chờ trên semaphore riêng
+\texttt{matchedSem}. Người chơi chỉ được tiếp tục khi một matchmaker đã:
+
+\begin{itemize}
+    \item Chọn người chơi đó vào một nhóm hợp lệ.
+    \item Gán \texttt{matchId}.
+    \item Xác định đội và vai trò trong trận.
+    \item Xóa yêu cầu khỏi hàng đợi chờ.
+\end{itemize}
+
+Matchmaker cũng có thể ngủ trên semaphore \texttt{requestSem} khi toàn bộ hệ
+thống chưa có đủ yêu cầu. Mỗi người chơi mới đến sẽ phát tín hiệu để đánh thức
+matchmaker kiểm tra lại khả năng tạo trận. Vì ngưỡng rank được mở rộng theo
+thời gian chờ, matchmaker không chỉ phụ thuộc vào yêu cầu mới mà còn cần thức
+dậy định kỳ để quét lại hàng đợi.
+
+\subsubsection*{Giới hạn năng lực}
+
+Trong biến thể 5v5, mỗi trận phải có đúng 10 người chơi:
+
+\[
+    \texttt{MATCH\_SIZE} = 10.
+\]
+
+Với cấu hình vai trò đã chọn, điều kiện về số lượng là:
+
+\[
+    Tank \geq 2,\quad Damage \geq 6,\quad Support \geq 2.
+\]
+
+Ngoài ra, mỗi người chơi chỉ được thuộc về tối đa một trận tại một thời điểm.
+Đây là bất biến quan trọng nhất:
+
+\[
+    \forall p,\quad p \text{ không thể xuất hiện trong hai } matchId
+    \text{ khác nhau.}
+\]
+
+\subsubsection*{Ràng buộc chất lượng trận đấu}
+
+Một trận hợp lệ không chỉ đủ người. Hệ thống còn cần kiểm tra độ lệch rank:
+
+\[
+    \max(MMR) - \min(MMR) \leq \Delta(t).
+\]
+
+Ở đây \(\Delta(t)\) là ngưỡng chênh lệch cho phép, có thể tăng theo thời gian
+chờ \(t\). Khi người chơi mới vào hàng đợi, \(\Delta(t)\) nhỏ để ưu tiên chất
+lượng trận. Nếu người chơi chờ lâu, ngưỡng được nới dần để tăng khả năng tìm
+trận.
+
+\subsubsection*{Công bằng và ưu tiên}
+
+Nếu hệ thống luôn chọn nhóm có rank gần nhau nhất, một số người chơi ở rank
+quá cao, quá thấp hoặc vai trò hiếm có thể chờ rất lâu. Vì vậy, lời giải cần
+có cơ chế \textit{aging}: yêu cầu càng chờ lâu thì càng được ưu tiên, hoặc
+ngưỡng rank càng được mở rộng.
+
+Một chính sách hợp lý là:
+
+\begin{itemize}
+    \item Ưu tiên người chơi chờ lâu trong từng hàng đợi vai trò.
+    \item Không lấy người chơi mới đến để thay thế người đã chờ lâu nếu cả hai
+    đều tạo được trận hợp lệ.
+    \item Mở rộng khoảng rank theo thời gian chờ nhưng vẫn giữ một ngưỡng tối đa
+    để tránh trận quá lệch.
+\end{itemize}
+
+\subsection{Phân tích lỗi tiềm ẩn}
+
+\subsubsection*{Race condition}
+
+Giả sử có hai matchmaker chạy song song để tăng tốc. Nếu cả hai cùng đọc hàng
+đợi mà không khóa, có thể xảy ra vết thực thi sau:
+
+\begin{lstlisting}
+Matchmaker A doc thay du 2 Tank, 6 Damage, 2 Support;
+Matchmaker B cung doc thay dung nhom nguoi cho do;
+
+Matchmaker A tao matchId = 101 cho 10 nguoi nay;
+Matchmaker B tao matchId = 102 cho cung mot vai nguoi trong nhom;
+\end{lstlisting}
+
+Kết quả là một người chơi có thể nhận hai thông báo vào trận khác nhau. Đây là
+lỗi nghiêm trọng vì trạng thái hàng đợi và trạng thái phòng đấu không còn nhất
+quán.
+
+\subsubsection*{Đánh thức sai người chơi}
+
+Nếu matchmaker dùng một semaphore chung cho tất cả người chơi, một người không
+thuộc nhóm được chọn vẫn có thể bị đánh thức. Người này có thể đọc
+\texttt{matchId} rỗng hoặc đi vào nhánh lỗi.
+
+\begin{lstlisting}
+// Giai phap sai: semaphore chung khong gan voi tung player
+signal(globalMatched);
+\end{lstlisting}
+
+Lời giải đúng nên dùng semaphore riêng trong từng \texttt{PlayerRequest}. Khi
+đó matchmaker phát tín hiệu đúng vào các yêu cầu đã được gán \texttt{matchId}.
+
+\subsubsection*{Hủy tìm trận trong lúc đang ghép}
+
+Người chơi có thể hủy tìm trận. Nếu thao tác hủy không đồng bộ với thao tác
+ghép, matchmaker có thể chọn một yêu cầu vừa bị hủy. Do đó trạng thái yêu cầu
+cần được kiểm tra trong cùng đoạn găng:
+
+\begin{itemize}
+    \item Nếu request còn \texttt{WAITING}, matchmaker được quyền chọn.
+    \item Nếu request đã \texttt{CANCELLED}, matchmaker phải bỏ qua.
+    \item Khi matchmaker chuyển request sang \texttt{MATCHED}, thao tác hủy sau
+    đó không được xóa request khỏi trận đã tạo.
+\end{itemize}
+
+\subsubsection*{Deadlock}
+
+Deadlock có thể xảy ra nếu matchmaker giữ \texttt{mutex} rồi chờ người chơi xác
+nhận vào phòng, trong khi người chơi cần lấy cùng \texttt{mutex} để đọc trạng
+thái trận:
+
+\begin{lstlisting}
+// Giai phap sai: giu mutex trong khi cho player phan hoi
+wait(mutex);
+signal(player.matchedSem);
+wait(player.acceptedSem);
+signal(mutex);
+\end{lstlisting}
+
+Nếu người chơi sau khi thức dậy cần \texttt{mutex} để đọc \texttt{matchId} và
+phát \texttt{acceptedSem}, hai bên sẽ chờ nhau. Cách tránh là matchmaker chỉ
+giữ mutex trong lúc cập nhật trạng thái, sau đó nhả mutex rồi mới chờ các xác
+nhận ngoài vùng găng nếu hệ thống cần pha xác nhận.
+
+\subsubsection*{Starvation / fairness}
+
+Starvation xuất hiện khi một nhóm người chơi liên tục bị bỏ qua vì không tạo
+được trận chất lượng cao theo tiêu chí ban đầu. Ví dụ, vai trò Tank đang thiếu
+có thể khiến nhiều Damage chờ lâu; hoặc một người chơi rank rất cao khó tìm đủ
+đối thủ cùng mức. Cơ chế aging và mở rộng \(\Delta(t)\) giúp giảm rủi ro này.
+
+Livelock có thể xảy ra nếu hệ thống liên tục thử tạo trận, thấy không đạt tiêu
+chí, thay đổi ứng viên rồi lại quay về trạng thái cũ mà không ai được ghép.
+Để tránh livelock, mỗi lần quét nên có quy tắc chọn ứng viên ổn định, ví dụ lấy
+người chờ lâu nhất làm hạt nhân rồi mở rộng dần tập ứng viên quanh người đó.
+
+\subsection{Giải pháp đề xuất}
+
+\subsubsection*{Chiến lược tiếp cận}
+
+Lời giải sử dụng monitor cho hàng đợi matchmaking. Monitor gom các hàng đợi,
+bộ sinh \texttt{matchId}, các thủ tục thêm/hủy yêu cầu và thủ tục tạo trận.
+Mỗi người chơi có một semaphore riêng để chờ kết quả.
+
+Ý tưởng chính:
+
+\begin{itemize}
+    \item Người chơi tạo \texttt{PlayerRequest}, đưa vào hàng đợi theo vai trò
+    rồi ngủ trên semaphore riêng.
+    \item Matchmaker lấy mutex, tìm một nhóm hợp lệ theo vai trò và rank.
+    \item Nếu tìm được nhóm, matchmaker xóa nhóm khỏi hàng đợi, gán
+    \texttt{matchId}, đổi trạng thái thành \texttt{MATCHED}, rồi đánh thức đúng
+    10 người chơi.
+    \item Nếu chưa tìm được nhóm, matchmaker chờ yêu cầu mới hoặc tự thức dậy
+    theo chu kỳ ngắn để áp dụng chính sách aging.
+\end{itemize}
+
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+
+\begin{lstlisting}
+const int TEAM_SIZE = 5;
+const int MATCH_SIZE = 10;
+
+enum Role { TANK, DAMAGE, SUPPORT };
+enum Status { WAITING, MATCHED, CANCELLED };
+
+typedef struct PlayerRequest {
+    int playerId;
+    int mmr;
+    Role role;
+    long enqueueTime;
+
+    Status status;
+    int matchId;
+    int teamId;
+
+    semaphore matchedSem;
+} PlayerRequest;
+
+Queue queue[3];              // Hang doi theo role
+int nextMatchId = 1;
+
+semaphore mutex = 1;         // Bao ve queue va trang thai request
+semaphore requestSem = 0;    // Bao co request moi
+const int RESCAN_INTERVAL_MS = 1000; // Chu ky quet lai de ap dung aging
+\end{lstlisting}
+
+\subsubsection*{Hàm kiểm tra nhóm hợp lệ}
+
+\begin{lstlisting}
+bool isValidGroup(List group, long now) {
+    if (countRole(group, TANK) != 2) return false;
+    if (countRole(group, DAMAGE) != 6) return false;
+    if (countRole(group, SUPPORT) != 2) return false;
+
+    int minMmr = minMMR(group);
+    int maxMmr = maxMMR(group);
+    long oldestWait = now - minEnqueueTime(group);
+
+    int delta = allowedDelta(oldestWait);
+
+    return (maxMmr - minMmr <= delta);
+}
+\end{lstlisting}
+
+Hàm \texttt{allowedDelta} biểu diễn chính sách mở rộng khoảng rank theo thời
+gian chờ. Ví dụ, hệ thống có thể bắt đầu với khoảng hẹp rồi tăng dần đến một
+ngưỡng tối đa.
+
+\subsubsection*{Mã giả cho người chơi}
+
+\begin{lstlisting}
+PlayerThread(int playerId, int mmr, Role role) {
+    PlayerRequest self;
+
+    self.playerId = playerId;
+    self.mmr = mmr;
+    self.role = role;
+    self.enqueueTime = now();
+    self.status = WAITING;
+    self.matchId = -1;
+    self.teamId = -1;
+    self.matchedSem = 0;
+
+    wait(mutex);
+    queue[role].enqueue(&self);
+    signal(mutex);
+
+    signal(requestSem);
+    // Bao cho matchmaker rang co yeu cau moi.
+
+    wait(self.matchedSem);
+    // Cho den khi duoc gan vao mot tran cu the.
+
+    if (self.status == MATCHED) {
+        joinMatch(self.matchId, self.teamId);
+    }
+}
+\end{lstlisting}
+
+\subsubsection*{Mã giả cho hủy tìm trận}
+
+\begin{lstlisting}
+CancelSearch(PlayerRequest *self) {
+    wait(mutex);
+
+    if (self->status == WAITING) {
+        self->status = CANCELLED;
+        removeFromQueue(queue[self->role], self);
+    }
+
+    signal(mutex);
+}
+\end{lstlisting}
+
+Thủ tục hủy chỉ có hiệu lực khi yêu cầu còn đang chờ. Nếu matchmaker đã chuyển
+trạng thái sang \texttt{MATCHED}, yêu cầu không còn thuộc hàng đợi và người chơi
+đã được gán vào một trận cụ thể.
+
+\subsubsection*{Mã giả cho matchmaker}
+
+\begin{lstlisting}
+MatchmakerThread() {
+    while (true) {
+        timedWait(requestSem, RESCAN_INTERVAL_MS);
+        // Thuc day khi co request moi hoac khi timer het han.
+
+        wait(mutex);
+
+        while (true) {
+            List group = findCandidateGroup(queue, now());
+
+            if (group.empty()) {
+                break;
+            }
+
+            if (!isValidGroup(group, now())) {
+                break;
+            }
+
+            int id = nextMatchId;
+            nextMatchId = nextMatchId + 1;
+
+            removeGroupFromQueues(group);
+            assignTeams(group);
+
+            for (PlayerRequest *p in group) {
+                p->status = MATCHED;
+                p->matchId = id;
+                signal(p->matchedSem);
+            }
+        }
+
+        signal(mutex);
+    }
+}
+\end{lstlisting}
+
+Trong đoạn mã trên, thao tác tìm nhóm, xóa nhóm khỏi hàng đợi và gán
+\texttt{matchId} diễn ra trong cùng đoạn găng. Vì vậy, không có matchmaker thứ
+hai nào có thể lấy trùng người chơi trong lúc nhóm đang được tạo.
+
+\subsubsection*{Hàm chọn nhóm ứng viên}
+
+\begin{lstlisting}
+List findCandidateGroup(Queue queue[], long now) {
+    PlayerRequest *seed = oldestWaitingPlayer(queue);
+
+    if (seed == null) {
+        return emptyList();
+    }
+
+    int delta = allowedDelta(now - seed->enqueueTime);
+
+    List group;
+    group.add(seed);
+    // Bat buoc dua nguoi cho lau nhat vao nhom ung vien.
+
+    int needTank = 2;
+    int needDamage = 6;
+    int needSupport = 2;
+
+    if (seed->role == TANK) needTank = needTank - 1;
+    if (seed->role == DAMAGE) needDamage = needDamage - 1;
+    if (seed->role == SUPPORT) needSupport = needSupport - 1;
+
+    group.add(selectOldestCompatibleExcept(queue[TANK], needTank,
+                                           seed, seed->mmr, delta));
+    group.add(selectOldestCompatibleExcept(queue[DAMAGE], needDamage,
+                                           seed, seed->mmr, delta));
+    group.add(selectOldestCompatibleExcept(queue[SUPPORT], needSupport,
+                                           seed, seed->mmr, delta));
+
+    if (group.size() != MATCH_SIZE) {
+        return emptyList();
+    }
+
+    return group;
+}
+\end{lstlisting}
+
+Cách chọn người chờ lâu nhất làm \textit{seed} giúp hệ thống không chỉ tối ưu
+rank gần nhau mà còn quan tâm đến thời gian chờ. Seed được đưa vào nhóm trước,
+sau đó hệ thống mới lấy thêm các người chơi tương thích theo từng vai trò. Nếu
+không đủ người tương thích quanh seed, hàm trả về rỗng và matchmaker sẽ thử lại
+ở lần quét sau, khi có yêu cầu mới hoặc khi ngưỡng aging được mở rộng.
+
+\subsection{Kiểm chứng ngắn}
+
+Giả sử hàng đợi hiện có 2 Tank, 6 Damage và 2 Support tương thích về rank.
+Matchmaker lấy \texttt{mutex}, gọi \texttt{findCandidateGroup} và nhận đúng 10
+yêu cầu. Sau đó matchmaker xóa cả nhóm khỏi các hàng đợi, tạo
+\texttt{matchId}, chia hai đội và gán trạng thái \texttt{MATCHED}. Chỉ sau khi
+trạng thái của từng người đã nhất quán, matchmaker mới phát tín hiệu trên
+\texttt{matchedSem} riêng của họ.
+
+Nếu một người chơi khác đến trong lúc matchmaker đang tạo trận, người đó bị
+chặn tại \texttt{wait(mutex)} và không thể chen vào nhóm đang được chốt. Nếu
+một người chơi cố hủy tìm trận sau khi đã được gán \texttt{MATCHED}, thủ tục
+hủy sẽ không xóa người đó khỏi trận vì trạng thái không còn là
+\texttt{WAITING}. Nhờ vậy, hệ thống giữ được bất biến mỗi người chơi thuộc tối
+đa một trận.
+
+\subsection{Kết luận bài toán}
+
+Bài toán Ghép đội đấu hạng cho thấy đồng bộ tài nguyên găng không chỉ xuất hiện
+trong các ví dụ kinh điển mà còn trong hệ thống dịch vụ thời gian thực. Tài
+nguyên găng ở đây là hàng đợi người chơi và trạng thái yêu cầu tìm trận. Lời
+giải đúng phải chọn nhóm một cách nguyên tử, đánh thức đúng người chơi được
+chọn, xử lý hủy tìm trận an toàn và có chính sách fairness để tránh starvation.
+Monitor kết hợp semaphore riêng cho từng người chơi là một mô hình phù hợp vì
+nó tách rõ hai việc: bảo vệ trạng thái dùng chung và thông báo kết quả ghép
+trận cho từng tiến trình.

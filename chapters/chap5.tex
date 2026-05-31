@@ -1,15 +1,14 @@
 \chapter{Nhóm bài toán mô phỏng dịch vụ thực tế}
 
-\newpage
 \section{Bài toán Thang máy (Elevator Problem)}
 % =========================================================
 % BAI TOAN THANG MAY -- ELEVATOR PROBLEM
 % Format theo template I--IV
 % =========================================================
 
-\subsection{Mô tả bài toán (Problem Description)}
+\subsection{Mô tả bài toán}
 
-\subsubsection*{Cốt truyện \& Bối cảnh}
+\subsubsection*{Cốt truyện và bối cảnh}
 
 Bài toán Thang máy mô phỏng hoạt động của một thang máy trong một tòa nhà
 nhiều tầng. Mỗi hành khách xuất hiện tại một tầng bất kỳ, bấm nút gọi
@@ -34,7 +33,7 @@ Mục tiêu cuối cùng của hệ thống là thiết kế cơ chế đồng b
     hạn chế việc một nhóm hành khách bị chờ vô hạn.
 \end{itemize}
 
-\subsubsection*{Các thực thể tham gia (Entities/Threads)}
+\subsection{Các thực thể tham gia}
 
 \paragraph{Thang máy (Elevator Thread).}
 
@@ -79,7 +78,7 @@ Mỗi tầng có thể có hai hàng đợi: một hàng đợi cho người mu�
 một hàng đợi cho người muốn đi xuống. Cách tách hàng đợi này giúp thang
 máy không gọi nhầm những hành khách muốn đi ngược hướng hiện tại.
 
-\subsubsection*{Tài nguyên dùng chung (Shared Resources)}
+\subsection{Tài nguyên dùng chung}
 
 Các tài nguyên dùng chung trong bài toán gồm:
 
@@ -99,7 +98,7 @@ Các tài nguyên này phải được bảo vệ bằng \texttt{mutex}, vì nhi
 khách có thể đồng thời gọi thang, trong khi thang máy cũng đồng thời cập
 nhật hàng đợi và biến tải trọng.
 
-\subsubsection*{Nhắc nhở (Visual Aid)}
+\subsubsection*{Sơ đồ minh họa}
 
 \begin{figure}[H]
 \centering
@@ -133,9 +132,9 @@ $\quad \longrightarrow \quad$
 \label{fig:elevator-model-new-template}
 \end{figure}
 
-\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+\subsection{Ràng buộc đồng bộ}
 
-\subsubsection*{Loại trừ tương hỗ (Mutual Exclusion)}
+\subsubsection*{Loại trừ tương hỗ}
 
 Đoạn găng của bài toán nằm ở mọi thao tác đọc/ghi các biến và cấu trúc
 dữ liệu dùng chung sau:
@@ -152,7 +151,7 @@ dữ liệu dùng chung sau:
 \texttt{load} phải được thực hiện nguyên tử. Nếu hai hành khách cùng thấy
 thang còn một chỗ cuối cùng rồi cùng bước vào, thang sẽ bị quá tải.
 
-\subsubsection*{Đồng bộ điều kiện (Condition Synchronization)}
+\subsubsection*{Đồng bộ điều kiện}
 
 Các quan hệ chờ--đánh thức chính gồm:
 
@@ -190,7 +189,7 @@ thang máy có thể ngủ trên semaphore \texttt{request}. Khi một hành kh�
 mới gọi thang, hành khách đó sẽ \texttt{signal(request)} để đánh thức
 thang máy.
 
-\subsubsection*{Giới hạn năng lực (Capacity Limits)}
+\subsubsection*{Giới hạn năng lực}
 
 Thang máy có sức chứa tối đa \texttt{CAPACITY}. Tại mọi thời điểm, hệ
 thống phải đảm bảo:
@@ -203,7 +202,7 @@ Thang máy chỉ được chọn thêm hành khách vào lô lên thang nếu c�
 trống. Việc đặt chỗ được thực hiện trước khi phát tín hiệu
 \texttt{canBoard}, nhờ đó hành khách không tự tranh chấp chỗ trống.
 
-\subsubsection*{Quy tắc ưu tiên \& Công bằng (Fairness/Priority)}
+\subsubsection*{Công bằng và ưu tiên}
 
 Một chính sách hợp lý là dùng SCAN/LOOK, tương tự cách đầu đọc đĩa cứng
 di chuyển: thang tiếp tục đi theo hướng hiện tại nếu phía trước còn yêu
@@ -214,9 +213,9 @@ cầu gần nhất, từ đó hạn chế việc các tầng xa bị bỏ quên.
 bằng mạnh hơn, có thể thêm cơ chế \textit{aging}: yêu cầu nào chờ quá lâu
 sẽ được tăng độ ưu tiên.
 
-\subsection{Phân tích thử thách \& Lỗi tiềm ẩn (Challenges \& Pitfalls)}
+\subsection{Phân tích lỗi tiềm ẩn}
 
-\subsubsection*{Nguy cơ Race Condition}
+\subsubsection*{Race condition}
 
 Giả sử thang chỉ còn một chỗ trống, tức là
 \texttt{load = CAPACITY - 1}. Nếu hai hành khách cùng được đánh thức và
@@ -238,7 +237,7 @@ Passenger B tang load len CAPACITY + 1;
 Lỗi nằm ở việc thao tác ``kiểm tra còn chỗ'' và ``chiếm chỗ'' không được
 thực hiện như một thao tác nguyên tử.
 
-\subsubsection*{Phân tích Bế tắc (Deadlock)}
+\subsubsection*{Deadlock}
 
 Một nguy cơ bế tắc xuất hiện nếu thang máy giữ \texttt{mutex} trong lúc
 chờ hành khách xác nhận đã vào hoặc đã ra. Khi đó:
@@ -255,7 +254,7 @@ chờ hành khách xác nhận đã vào hoặc đã ra. Khi đó:
 Đây là một dạng chờ vòng tròn: thang máy chờ hành khách, còn hành khách
 lại chờ tài nguyên đang bị thang máy giữ.
 
-\subsubsection*{Đói tài nguyên (Starvation) \& Livelock}
+\subsubsection*{Starvation / fairness}
 
 Nếu thang máy luôn chọn yêu cầu gần nhất, hệ thống vẫn có thể hoạt động
 liên tục nhưng một số tầng xa không bao giờ được phục vụ. Ví dụ, nếu các
@@ -320,7 +319,7 @@ signal(mutex);            // Co the khong bao gio chay den day neu p can mutex.
 Nếu hành khách cần \texttt{mutex} để cập nhật trạng thái trước khi
 \texttt{signal(boarded)}, hệ thống sẽ rơi vào deadlock.
 
-\subsection{Giải pháp \& Mã giả chi tiết (Proposed Solution \& Pseudocode)}
+\subsection{Giải pháp đề xuất}
 
 \subsubsection*{Chiến lược tiếp cận}
 
@@ -342,7 +341,9 @@ Thang máy là tiến trình duy nhất được quyền quyết định ai đư
 khi phát tín hiệu \texttt{canBoard}; nhờ đó không có hai hành khách nào
 cùng tranh một chỗ cuối cùng.
 
-\subsubsection*{Khởi tạo cấu trúc dữ liệu \& Biến đồng bộ}
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
 
 \begin{lstlisting}
 #define FLOORS   10
@@ -381,7 +382,7 @@ semaphore boarded = 0;    // Hanh khach xac nhan da vao thang.
 semaphore exited = 0;     // Hanh khach xac nhan da ra khoi thang.
 \end{lstlisting}
 
-\subsubsection*{Mã giả cho hành khách (Passenger Thread)}
+\subsubsection*{Mã giả cho hành khách}
 
 \begin{lstlisting}
 int dirIndex(Direction d) {
@@ -444,6 +445,30 @@ bool hasWaitingAt(int f) {
     return !waitQ[f][0].empty() || !waitQ[f][1].empty();
 }
 
+Direction waitingDirectionAt(int f) {
+    if (!waitQ[f][1].empty()) {
+        return UP;
+    }
+    if (!waitQ[f][0].empty()) {
+        return DOWN;
+    }
+    return IDLE;
+}
+
+bool shouldStopHere() {
+    if (!exitQ[currentFloor].empty()) {
+        return true;
+    }
+    if (load == CAPACITY) {
+        // Thang day: chi dung de tra khach, khong dung chi de don them.
+        return false;
+    }
+    if (direction == IDLE) {
+        return hasWaitingAt(currentFloor);
+    }
+    return !waitQ[currentFloor][dirIndex(direction)].empty();
+}
+
 bool hasRequestAbove(int f) {
     for (int i = f + 1; i < FLOORS; i++) {
         if (hasWaitingAt(i) || !exitQ[i].empty()) {
@@ -473,7 +498,12 @@ bool noPendingRequest() {
 
 void updateDirection() {
     if (direction == IDLE) {
-        if (hasRequestAbove(currentFloor)) {
+        Direction here = waitingDirectionAt(currentFloor);
+
+        if (here != IDLE) {
+            direction = here;
+        }
+        else if (hasRequestAbove(currentFloor)) {
             direction = UP;
         }
         else if (hasRequestBelow(currentFloor)) {
@@ -481,7 +511,12 @@ void updateDirection() {
         }
     }
     else if (direction == UP && !hasRequestAbove(currentFloor)) {
-        if (hasRequestBelow(currentFloor)) {
+        Direction here = waitingDirectionAt(currentFloor);
+
+        if (here != IDLE) {
+            direction = here;
+        }
+        else if (hasRequestBelow(currentFloor)) {
             direction = DOWN;
         }
         else {
@@ -489,7 +524,12 @@ void updateDirection() {
         }
     }
     else if (direction == DOWN && !hasRequestBelow(currentFloor)) {
-        if (hasRequestAbove(currentFloor)) {
+        Direction here = waitingDirectionAt(currentFloor);
+
+        if (here != IDLE) {
+            direction = here;
+        }
+        else if (hasRequestAbove(currentFloor)) {
             direction = UP;
         }
         else {
@@ -499,7 +539,12 @@ void updateDirection() {
 }
 \end{lstlisting}
 
-\subsubsection*{Mã giả cho thang máy (Elevator Thread)}
+Hàm \texttt{shouldStopHere()} luôn ưu tiên trả khách ở tầng hiện tại. Nếu
+thang đã đầy, thang không dừng chỉ vì có người chờ lên ở tầng đó; nó tiếp tục
+di chuyển đến tầng có khách cần ra để tránh bị kẹt tại một tầng không thể đón
+thêm người.
+
+\subsubsection*{Mã giả cho thang máy}
 
 \begin{lstlisting}
 ElevatorThread() {
@@ -514,7 +559,9 @@ ElevatorThread() {
         }
 
         updateDirection();
-        moveOneFloorIfNeeded();   // Cap nhat currentFloor theo direction.
+        if (!shouldStopHere()) {
+            moveOneFloorIfNeeded();   // Cap nhat currentFloor theo direction.
+        }
         int f = currentFloor;
 
         // 2. Pha ra thang: chon dung nguoi co dich den la tang f.
@@ -572,7 +619,7 @@ ElevatorThread() {
 }
 \end{lstlisting}
 
-\subsubsection*{Kiểm chứng (Walkthrough/Dry-run)}
+\subsection{Kiểm chứng ngắn}
 
 Giả sử thang máy đang ở tầng 2 và có hai hành khách đang chờ ở tầng 2 để
 đi lên. Khi thang đến tầng 2, nó chỉ lấy hành khách từ
@@ -594,6 +641,15 @@ hiệu \texttt{boarded} hoặc \texttt{exited}. Chính sách SCAN/LOOK giúp h�
 chế starvation bằng cách không cho thang đổi hướng tùy tiện theo yêu cầu
 gần nhất.
 
+\subsection{Kết luận bài toán}
+
+Bài toán Thang máy minh họa đồng bộ trong một dịch vụ có nhiều hàng đợi,
+nhiều điều kiện chờ và giới hạn tài nguyên rõ ràng. Lời giải dùng mutex để
+bảo vệ trạng thái thang máy, semaphore riêng cho từng hành khách để tránh
+đánh thức nhầm, và chính sách SCAN/LOOK để phục vụ yêu cầu theo hướng ổn
+định. Nhờ đặt chỗ trước khi báo cho hành khách vào thang, hệ thống giữ được
+bất biến \texttt{load <= CAPACITY} và hạn chế starvation.
+
 % =========================================================
 % BAI TOAN GAU VA DAN ONG -- THE BEAR AND THE HONEYBEES
 % Nguon bai toan:
@@ -610,9 +666,9 @@ gần nhất.
 \newpage
 \section{Bài toán Gấu và đàn ong (Bear and Honeybees Problem)}
 
-\subsection{Mô tả bài toán (Problem Description)}
+\subsection{Mô tả bài toán}
 
-\subsubsection{Cốt truyện và bối cảnh}
+\subsubsection*{Cốt truyện và bối cảnh}
 
 Bài toán Gấu và Đàn ong (\textit{The Bear and the Honeybees}) mô phỏng
 một hệ thống trong đó nhiều con ong cùng thu thập mật để nuôi một con
@@ -650,7 +706,7 @@ Mục tiêu cuối cùng của hệ thống là đảm bảo:
 \item Sau khi gấu ăn hết mật, một chu kỳ làm đầy hũ mới được bắt đầu.
 \end{itemize}
 
-\subsubsection{Các thực thể tham gia (Entities/Threads)}
+\subsection{Các thực thể tham gia}
 
 \paragraph{Ong (Honeybee).}
 
@@ -677,7 +733,7 @@ trạng thái rỗng, rồi cho phép đàn ong tiếp tục bỏ mật.
 Ăn hết mật $\rightarrow$ Làm rỗng hũ $\rightarrow$ Ngủ lại}
 \end{center}
 
-\subsubsection{Tài nguyên dùng chung (Shared Resources)}
+\subsection{Tài nguyên dùng chung}
 
 Các tài nguyên dùng chung trong bài toán gồm:
 
@@ -693,7 +749,7 @@ con ong cần tăng biến này sau khi bỏ mật, còn gấu cần đặt bi�
 sau khi ăn hết mật. Nếu không có đồng bộ, dữ liệu trong hũ có thể bị
 cập nhật sai hoặc hũ có thể bị tràn.
 
-\subsubsection{Sơ đồ minh họa đề xuất (Visual Aid)}
+\subsubsection*{Sơ đồ minh họa}
 
 \begin{figure}[H]
 \centering
@@ -736,9 +792,9 @@ cập nhật sai hoặc hũ có thể bị tràn.
 
 % =========================================================
 
-\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+\subsection{Ràng buộc đồng bộ}
 
-\subsubsection{Loại trừ tương hỗ (Mutual Exclusion)}
+\subsubsection*{Loại trừ tương hỗ}
 
 Đoạn găng (\textit{critical section}) của bài toán là thao tác một con
 ong bỏ mật vào hũ và cập nhật số phần mật hiện có:
@@ -763,7 +819,7 @@ gấu. Sau khi ăn hết mật, gấu mới gọi \texttt{signal(mutex)} để c
 các con ong bắt đầu chu kỳ tiếp theo
 \cite[Slides~13--15]{kerola2012}.
 
-\subsubsection{Đồng bộ điều kiện (Condition Synchronization)}
+\subsubsection*{Đồng bộ điều kiện}
 
 \paragraph{Quan hệ chờ -- đánh thức của ong.}
 
@@ -788,7 +844,7 @@ gấu.
 \texttt{signal(mutex)} để cho phép ong bắt đầu làm đầy hũ trở lại.
 \end{itemize}
 
-\subsubsection{Giới hạn năng lực (Capacity Limits)}
+\subsubsection*{Giới hạn năng lực}
 
 Hũ mật có sức chứa tối đa là $H$ phần mật. Trong toàn bộ quá trình thực
 thi, hệ thống phải duy trì bất biến:
@@ -801,7 +857,7 @@ Khi \texttt{portions = H}, con ong cuối cùng không mở lại
 \texttt{mutex}; vì vậy không con ong nào có thể làm cho
 \texttt{portions} vượt quá $H$ trước khi gấu đưa hũ về trạng thái rỗng.
 
-\subsubsection{Quy tắc ưu tiên và công bằng (Fairness/Priority)}
+\subsubsection*{Công bằng và ưu tiên}
 
 Bài toán không quy định sự ưu tiên giữa các con ong, vì mọi con ong đều
 có vai trò giống nhau. Tuy nhiên, khi hũ đã đầy, gấu bắt buộc phải được
@@ -819,9 +875,9 @@ thống có thể sử dụng semaphore với hàng đợi FIFO.
 
 % =========================================================
 
-\subsection{Phân tích thử thách và lỗi tiềm ẩn (Challenges \& Pitfalls)}
+\subsection{Phân tích lỗi tiềm ẩn}
 
-\subsubsection{Nguy cơ Race Condition}
+\subsubsection*{Race condition}
 
 Giả sử hũ có sức chứa $H = 10$ và hiện tại đang có
 \texttt{portions = 9}. Hai con ong A và B cùng mang mật về gần như
@@ -839,7 +895,7 @@ Trong trường hợp này, hai con ong cùng cho rằng mình có thể bỏ ph
 cuối cùng vào hũ. Số mật thực tế vượt quá sức chứa, trong khi biến đếm
 có thể không phản ánh chính xác trạng thái thật của tài nguyên.
 
-\subsubsection{Đoạn mã lỗi minh họa (Naive Solution)}
+\subsubsection*{Đoạn mã lỗi minh họa}
 
 \begin{lstlisting}
 // Giai phap sai: nhieu ong co the cap nhat hu dong thoi
@@ -861,7 +917,7 @@ if (portions == H) {
 nhiều con ong có thể cùng truy cập hũ, làm hũ bị tràn hoặc khiến gấu
 được đánh thức sai thời điểm.
 
-\subsubsection{Phân tích Deadlock}
+\subsubsection*{Deadlock}
 
 Một lời giải sai có thể xảy ra nếu con ong làm đầy hũ giữ quyền truy cập
 hũ nhưng quên đánh thức gấu:
@@ -896,7 +952,7 @@ tiến triển, nên hệ thống rơi vào deadlock.
 Lời giải đúng tránh lỗi này bằng cách quy định rõ: con ong làm đầy hũ
 phải gọi \texttt{signal(potFull)} để trao lượt xử lý cho gấu.
 
-\subsubsection{Phân tích Starvation và Livelock}
+\subsubsection*{Starvation / fairness}
 
 Trong lời giải đề xuất, sau khi hũ đầy, gấu chắc chắn được đánh thức bởi
 con ong bỏ phần mật cuối cùng. Sau khi gấu ăn hết mật, gấu mở lại
@@ -914,9 +970,9 @@ một tiến trình, trạng thái hệ thống đều tiến triển: ong làm 
 
 % =========================================================
 
-\subsection{Giải pháp và mã giả chi tiết (Proposed Solution \& Pseudocode)}
+\subsection{Giải pháp đề xuất}
 
-\subsubsection{Chiến lược tiếp cận}
+\subsubsection*{Chiến lược tiếp cận}
 
 Bài toán được Andrews trình bày dưới dạng bài tập đồng bộ. Trong báo cáo này, nhóm sử dụng lời giải semaphore
 được Kerola trình bày trong tài liệu giảng dạy của University of
@@ -947,7 +1003,9 @@ Như vậy, khi hũ đầy, quyền xử lý được chuyển trực tiếp t�
 cùng sang con gấu; không ong nào có thể thêm mật trong thời gian gấu
 đang ăn.
 
-\subsubsection{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
 
 \begin{lstlisting}
 int portions = 0;             // So phan mat hien co trong hu
@@ -957,7 +1015,7 @@ semaphore mutex = 1;          // Quyen truy cap doc quyen vao hu
 semaphore potFull = 0;        // Gau cho den khi hu mat day
 \end{lstlisting}
 
-\subsubsection{Mã giả cho tiến trình Ong}
+\subsubsection*{Mã giả cho tiến trình Ong}
 
 \begin{lstlisting}
 Bee() {
@@ -989,7 +1047,7 @@ gatherHoney();
 }
 \end{lstlisting}
 
-\subsubsection{Mã giả cho tiến trình Gấu}
+\subsubsection*{Mã giả cho tiến trình Gấu}
 
 \begin{lstlisting}
 Bear() {
@@ -1017,7 +1075,7 @@ ký hiệu \texttt{wait}/\texttt{signal} trong báo cáo tương ứng với tha
 tác semaphore trong nguồn
 \cite[Slides~13--15]{kerola2012}.
 
-\subsubsection{Giải thích cơ chế chuyển quyền (Baton Passing)}
+\subsubsection*{Giải thích cơ chế chuyển quyền}
 
 Trong mã giả trên, gấu không gọi \texttt{wait(mutex)} trước khi ăn mật.
 Điều này là có chủ đích. Khi con ong cuối cùng làm đầy hũ, ong đó đã
@@ -1032,7 +1090,7 @@ mới. Cơ chế này được gọi là chuyển quyền hoặc
 \textit{pass the mutex baton}
 \cite[Slides~13--15]{kerola2012}.
 
-\subsubsection{Kiểm chứng (Walkthrough/Dry-run)}
+\subsection{Kiểm chứng ngắn}
 
 Giả sử hũ có sức chứa $H = 3$. Ban đầu:
 
@@ -1093,9 +1151,9 @@ race condition và bảo đảm đúng thứ tự hoạt động theo đặc t�
 \newpage
 \section{Bài toán Xe buýt ở trạm (Senate Bus Problem)}
 
-\subsection{Mô tả bài toán (Problem Description)}
+\subsection{Mô tả bài toán}
 
-\subsubsection{Cốt truyện và bối cảnh}
+\subsubsection*{Cốt truyện và bối cảnh}
 
 Bài toán Xe buýt ở trạm (\textit{Senate Bus Problem}) được xây dựng
 dựa trên tuyến xe buýt Senate tại Wellesley College. Tại một trạm xe
@@ -1130,7 +1188,7 @@ Bài toán này là một ví dụ tiêu biểu của cơ chế đồng bộ the
 (\textit{batch synchronization}), trong đó hệ thống cần ``chốt'' một
 nhóm tiến trình thuộc lượt hiện tại trước khi xử lý lượt tiếp theo.
 
-\subsubsection{Các thực thể tham gia (Entities/Threads)}
+\subsection{Các thực thể tham gia}
 
 \paragraph{Hành khách (Rider).}
 
@@ -1161,7 +1219,7 @@ $\rightarrow$ Đón khách $\rightarrow$ Rời trạm}
 Vai trò của xe buýt là đảm bảo đúng giới hạn sức chứa, đúng lượt hành
 khách và đúng thứ tự giữa boarding và departing.
 
-\subsubsection{Tài nguyên dùng chung (Shared Resources)}
+\subsection{Tài nguyên dùng chung}
 
 Các tài nguyên dùng chung trong bài toán gồm:
 
@@ -1180,7 +1238,7 @@ có thể cùng đến trạm và muốn cập nhật số người chờ. Ngoà
 xác định nhóm hành khách của chuyến hiện tại cũng phải được bảo vệ để
 ngăn người đến sau chen ngang.
 
-\subsubsection{Sơ đồ minh họa đề xuất (Visual Aid)}
+\subsubsection*{Sơ đồ minh họa}
 
 \begin{figure}[H]
 \centering
@@ -1223,9 +1281,9 @@ ngăn người đến sau chen ngang.
 
 % =========================================================
 
-\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+\subsection{Ràng buộc đồng bộ}
 
-\subsubsection{Loại trừ tương hỗ (Mutual Exclusion)}
+\subsubsection*{Loại trừ tương hỗ}
 
 Đoạn găng (\textit{critical section}) đầu tiên là thao tác cập nhật số
 hành khách đang chờ:
@@ -1257,7 +1315,7 @@ Việc xe giữ \texttt{mutex} trong thời gian này ngăn hành khách mới c
 nhật \texttt{waiting}; do đó những người đến trong lúc boarding không
 thể thuộc chuyến hiện tại.
 
-\subsubsection{Đồng bộ điều kiện (Condition Synchronization)}
+\subsubsection*{Đồng bộ điều kiện}
 
 \paragraph{Quan hệ chờ -- đánh thức của hành khách.}
 
@@ -1287,7 +1345,7 @@ Cơ chế xe phát một tín hiệu rồi chờ một xác nhận tạo thành 
 \textit{rendezvous}: mỗi hành khách được chọn phải hoàn tất boarding
 trước khi xe xử lý hành khách tiếp theo.
 
-\subsubsection{Giới hạn năng lực (Capacity Limits)}
+\subsubsection*{Giới hạn năng lực}
 
 Theo đặc tả gốc, xe buýt có sức chứa tối đa là 50 người. Vì vậy, số
 hành khách được chọn cho một chuyến là:
@@ -1307,7 +1365,7 @@ waiting = \max(waiting - 50, 0)
 \]
 \cite[Sec.~7.4, p.~211; Sec.~7.4.3, p.~217]{downey2016}
 
-\subsubsection{Quy tắc ưu tiên và công bằng (Fairness/Priority)}
+\subsubsection*{Công bằng và ưu tiên}
 
 Bài toán không quy định nhóm hành khách ưu tiên đặc biệt. Quy tắc quan
 trọng nhất là phân chia theo thời điểm đến:
@@ -1326,9 +1384,9 @@ sẽ được lên trước.
 
 % =========================================================
 
-\subsection{Phân tích thử thách và lỗi tiềm ẩn (Challenges \& Pitfalls)}
+\subsection{Phân tích lỗi tiềm ẩn}
 
-\subsubsection{Nguy cơ Race Condition}
+\subsubsection*{Race condition}
 
 Giả sử hiện tại có \texttt{waiting = 5}. Hai hành khách A và B đến trạm
 gần như cùng lúc. Nếu biến \texttt{waiting} không được bảo vệ, có thể
@@ -1346,7 +1404,7 @@ Kết quả hệ thống chỉ ghi nhận 6 người chờ, trong khi thực t�
 7 người. Khi xe buýt đến, xe có thể cho thiếu người lên hoặc cập nhật
 sai số hành khách còn lại.
 
-\subsubsection{Đoạn mã lỗi minh họa (Naive Solution)}
+\subsubsection*{Đoạn mã lỗi minh họa}
 
 \begin{lstlisting}
 // Giai phap sai: xe khong khoa tram trong luc boarding
@@ -1370,7 +1428,7 @@ trạm ngay sau khi phát tín hiệu, không chờ các hành khách thực s�
 tất \texttt{board()}. Vì vậy xe có thể rời đi trong khi hành khách vẫn
 đang lên xe.
 
-\subsubsection{Phân tích Deadlock}
+\subsubsection*{Deadlock}
 
 Một giải pháp sai có thể đảo ngược thứ tự giữa việc cho hành khách lên
 và việc xe chờ xác nhận:
@@ -1405,7 +1463,7 @@ Lời giải đúng tránh lỗi này bằng cách luôn thực hiện:
 Nghĩa là xe mở quyền lên cho một hành khách trước, sau đó mới chờ hành
 khách đó xác nhận đã lên xe xong.
 
-\subsubsection{Phân tích Starvation và Livelock}
+\subsubsection*{Starvation / fairness}
 
 Người đến trong lúc xe đang boarding phải chờ chuyến tiếp theo theo
 đúng đặc tả, nên đây không được xem là starvation. Tuy nhiên, nếu số
@@ -1422,9 +1480,9 @@ Lời giải không gây livelock, vì mỗi lần xe phát tín hiệu
 
 % =========================================================
 
-\subsection{Giải pháp và mã giả chi tiết (Proposed Solution \& Pseudocode)}
+\subsection{Giải pháp đề xuất}
 
-\subsubsection{Chiến lược tiếp cận}
+\subsubsection*{Chiến lược tiếp cận}
 
 Báo cáo sử dụng lời giải số 2 của bài toán Senate Bus trong
 \textit{The Little Book of Semaphores}. Lời giải này do Grant Hutchins
@@ -1459,7 +1517,9 @@ suốt quá trình boarding.
 Nhờ việc giữ \texttt{mutex} trong quá trình boarding, mọi hành khách đến
 muộn đều bị chặn và chỉ được ghi nhận cho chuyến tiếp theo.
 
-\subsubsection{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
 
 \begin{lstlisting}
 int waiting = 0;              // So hanh khach dang cho tai tram
@@ -1470,7 +1530,7 @@ semaphore bus = 0;            // Xe cho phep mot hanh khach len
 semaphore boarded = 0;        // Hanh khach bao da len xe xong
 \end{lstlisting}
 
-\subsubsection{Mã giả cho tiến trình Hành khách}
+\subsubsection*{Mã giả cho tiến trình Hành khách}
 
 \begin{lstlisting}
 Rider() {
@@ -1504,7 +1564,7 @@ arriveAtStop();
 }
 \end{lstlisting}
 
-\subsubsection{Mã giả cho tiến trình Xe buýt}
+\subsubsection*{Mã giả cho tiến trình Xe buýt}
 
 \begin{lstlisting}
 Bus() {
@@ -1542,7 +1602,7 @@ arriveAtStop();
 }
 \end{lstlisting}
 
-\subsubsection{Giải thích cơ chế ``I'll do it for you''}
+\subsubsection*{Giải thích cơ chế ``I'll do it for you''}
 
 Trong lời giải này, hành khách không tự giảm biến \texttt{waiting} sau
 khi lên xe. Thay vào đó, xe buýt tự cập nhật tổng số hành khách còn chờ
@@ -1559,7 +1619,7 @@ không cần truyền \texttt{mutex} lần lượt giữa các hành khách và 
 dõi hơn lời giải dùng \textit{pass the baton}
 \cite[Sec.~7.4.3, p.~217]{downey2016}.
 
-\subsubsection{Kiểm chứng (Walkthrough/Dry-run)}
+\subsection{Kiểm chứng ngắn}
 
 Giả sử có 65 hành khách đang chờ khi xe đến. Xe lấy
 \texttt{mutex}, vì vậy không hành khách mới nào có thể đăng ký trong

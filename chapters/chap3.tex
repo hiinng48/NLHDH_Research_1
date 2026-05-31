@@ -1,15 +1,14 @@
 \chapter{Nhóm bài toán giới hạn tài nguyên và điều phối truy cập}
 
-\newpage
 \section{Bài toán Phòng đọc sách giới hạn (Room Party Problem)}
 % =========================================================
 % BAI TOAN PHONG DOC SACH GIOI HAN -- ROOM PARTY PROBLEM
 % Format theo template I--IV
 % =========================================================
 
-\subsection{Mô tả bài toán (Problem Description)}
+\subsection{Mô tả bài toán}
 
-\subsubsection*{Cốt truyện \& Bối cảnh}
+\subsubsection*{Cốt truyện và bối cảnh}
 
 Bài toán Phòng đọc sách giới hạn mô phỏng một phòng đọc, phòng sinh hoạt
 chung hoặc phòng hoạt động nhóm có số chỗ ngồi hữu hạn. Nhiều người có
@@ -46,7 +45,7 @@ thao tác bước vào phòng phải được xem như một hành động nguy�
 hai tiến trình cùng nhìn thấy phòng còn đúng một chỗ, cả hai có thể cùng
 bước vào nếu thiếu đồng bộ, làm phòng vượt quá sức chứa.
 
-\subsubsection*{Các thực thể tham gia (Entities/Threads)}
+\subsection{Các thực thể tham gia}
 
 \paragraph{Phòng đọc (Reading Room).}
 
@@ -94,7 +93,7 @@ chung. Nó quyết định:
 Nếu chỉ dùng semaphore đếm mà không có hàng đợi rõ ràng, bài toán có thể
 đúng về sức chứa nhưng chưa chắc đúng về công bằng.
 
-\subsubsection*{Tài nguyên dùng chung (Shared Resources)}
+\subsection{Tài nguyên dùng chung}
 
 Các tài nguyên dùng chung trong bài toán gồm:
 
@@ -112,7 +111,7 @@ Các biến như \texttt{inside} và hàng đợi \texttt{waitQ} phải được
 bởi cùng một \texttt{mutex} hoặc nằm bên trong cùng một monitor, vì nhiều
 tiến trình có thể đồng thời xin vào hoặc rời khỏi phòng.
 
-\subsubsection*{Nhắc nhở (Visual Aid)}
+\subsubsection*{Sơ đồ minh họa}
 
 \begin{figure}[H]
 \centering
@@ -148,9 +147,9 @@ $\quad \longrightarrow \quad$
 
 % =========================================================
 
-\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+\subsection{Ràng buộc đồng bộ}
 
-\subsubsection*{Loại trừ tương hỗ (Mutual Exclusion)}
+\subsubsection*{Loại trừ tương hỗ}
 
 Đoạn găng của bài toán là mọi đoạn mã đọc hoặc cập nhật trạng thái dùng
 chung của phòng đọc, đặc biệt là:
@@ -167,7 +166,7 @@ Các thao tác này phải được thực hiện dưới \texttt{mutex} hoặc 
 một monitor. Nếu không, hai người có thể cùng đọc trạng thái cũ và cùng
 cập nhật sai, khiến phòng vượt quá sức chứa hoặc hàng đợi bị hỏng.
 
-\subsubsection*{Đồng bộ điều kiện (Condition Synchronization)}
+\subsubsection*{Đồng bộ điều kiện}
 
 Quan hệ chờ--đánh thức trong bài toán như sau:
 
@@ -187,7 +186,7 @@ Quan hệ chờ--đánh thức trong bài toán như sau:
 chấp chỗ trống. Bộ điều phối phải đặt chỗ trước, sau đó mới
 \texttt{signal} semaphore riêng của người đó.
 
-\subsubsection*{Giới hạn năng lực (Capacity Limits)}
+\subsubsection*{Giới hạn năng lực}
 
 Giới hạn vật lý của hệ thống là sức chứa tối đa \texttt{CAPACITY}. Bất
 biến cần giữ trong toàn bộ quá trình chạy là:
@@ -200,7 +199,7 @@ Mỗi lần một người vào phòng, \texttt{inside} tăng thêm 1. Mỗi l�
 người rời phòng, \texttt{inside} giảm đi 1. Không được cho thêm người vào
 nếu \texttt{inside == CAPACITY}.
 
-\subsubsection*{Quy tắc ưu tiên \& Công bằng (Fairness/Priority)}
+\subsubsection*{Công bằng và ưu tiên}
 
 Phiên bản cơ bản bằng semaphore đếm chỉ đảm bảo không vượt quá sức chứa,
 nhưng không đảm bảo FIFO. Trong nhiều hệ thống, khi một semaphore được
@@ -221,9 +220,9 @@ tránh một nhóm chiếm phòng mãi.
 
 % =========================================================
 
-\subsection{Phân tích thử thách \& Lỗi tiềm ẩn (Challenges \& Pitfalls)}
+\subsection{Phân tích lỗi tiềm ẩn}
 
-\subsubsection*{Nguy cơ Race Condition}
+\subsubsection*{Race condition}
 
 Một lỗi phổ biến là tự quản lý số người trong phòng bằng biến
 \texttt{inside} nhưng không bảo vệ bằng mutex. Giả sử phòng còn đúng một
@@ -249,7 +248,7 @@ Vết thực thi trên cho thấy thao tác ``kiểm tra còn chỗ'' và ``tăn
 \texttt{inside}'' không được tách rời nhau. Chúng phải nằm trong cùng một
 đoạn găng.
 
-\subsubsection*{Phân tích Bế tắc (Deadlock)}
+\subsubsection*{Deadlock}
 
 Một cách sửa sai thường gặp là thêm mutex quanh biến \texttt{inside},
 nhưng lại để tiến trình giữ mutex trong khi đang chờ điều kiện. Đây là
@@ -296,7 +295,7 @@ Kịch bản deadlock:
     \texttt{spaceAvailable}. Hệ thống bị kẹt vô hạn.
 \end{itemize}
 
-\subsubsection*{Đói tài nguyên (Starvation) \& Livelock}
+\subsubsection*{Starvation / fairness}
 
 Starvation có thể xảy ra trong hai tình huống chính.
 
@@ -357,7 +356,7 @@ người rời phòng đồng thời.
 
 % =========================================================
 
-\subsection{Giải pháp \& Mã giả chi tiết (Proposed Solution \& Pseudocode)}
+\subsection{Giải pháp đề xuất}
 
 \subsubsection*{Chiến lược tiếp cận}
 
@@ -375,7 +374,9 @@ Giải pháp đề xuất gồm hai mức:
 Phiên bản công bằng là lời giải chính vì nó vừa giữ được giới hạn sức
 chứa, vừa chống chen hàng và giảm nguy cơ starvation.
 
-\subsubsection*{Khởi tạo cấu trúc dữ liệu \& Biến đồng bộ}
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
 
 \paragraph{Biến trạng thái (State Variables).}
 
@@ -606,7 +607,7 @@ LeaveGroupRoom(int myGroup) {
 Cách gọi theo lô này giúp tránh việc nhóm hiện tại kéo dài quyền sử dụng
 mãi bằng cách liên tục đưa người mới vào, trong khi nhóm khác đang chờ.
 
-\subsubsection*{Kiểm chứng (Walkthrough/Dry-run)}
+\subsection{Kiểm chứng ngắn}
 
 Giả sử \texttt{CAPACITY = 2}. Ban đầu \texttt{inside = 0} và
 \texttt{waitQ} rỗng.
@@ -638,6 +639,14 @@ Giải pháp này khắc phục các lỗi ở Mục III như sau:
     mới đến không được chen ngang nếu hàng chờ chưa rỗng.
 \end{itemize}
 
+\subsection{Kết luận bài toán}
+
+Bài toán Room Party cho thấy giới hạn sức chứa không chỉ cần một biến đếm
+đơn giản mà còn cần bảo vệ vùng găng khi cập nhật trạng thái. Lời giải dùng
+mutex, hàng đợi FIFO và semaphore riêng giúp giữ bất biến
+\texttt{inside <= CAPACITY}, tránh deadlock do chờ khi đang giữ mutex và hạn
+chế starvation cho các tiến trình đến trước.
+
 \newpage
 \section{Bài toán Bãi đỗ xe giới hạn (Parking Lot Problem)}
 % =========================================================
@@ -645,9 +654,9 @@ Giải pháp này khắc phục các lỗi ở Mục III như sau:
 % FORMAT THEO TEMPLATE I--IV
 % =========================================================
 
-\subsection{Mô tả bài toán (Problem Description)}
+\subsection{Mô tả bài toán}
 
-\subsubsection*{1. Cốt truyện \& Bối cảnh}
+\subsubsection*{Cốt truyện và bối cảnh}
 
 Hãy tưởng tượng một bãi đỗ xe trong trung tâm thương mại vào giờ cao điểm.
 Bãi xe chỉ có hữu hạn \texttt{CAPACITY} vị trí đỗ. Nhiều xe có thể đến bãi
@@ -675,7 +684,7 @@ Mục tiêu cuối cùng của hệ thống là bảo đảm:
     \item Nếu có yêu cầu công bằng, xe đã chờ lâu không bị xe mới đến chen ngang mãi mãi.
 \end{itemize}
 
-\subsubsection*{2. Các thực thể tham gia (Entities/Threads)}
+\subsection{Các thực thể tham gia}
 
 \paragraph{Xe (Car).}
 Mỗi xe là một luồng độc lập. Xe không biết trước bãi còn chỗ hay không, mà
@@ -711,7 +720,7 @@ hoặc nhiều nhân viên điều phối, phần này càng phải được b�
 Trong biến thể công bằng, các xe bị chặn vì bãi đầy được đưa vào hàng chờ
 FIFO. Khi có xe rời bãi, xe đứng đầu hàng chờ được gọi vào trước.
 
-\subsubsection*{3. Tài nguyên dùng chung (Shared Resources)}
+\subsection{Tài nguyên dùng chung}
 
 Các tài nguyên và trạng thái dùng chung gồm:
 
@@ -730,7 +739,7 @@ bảo vệ được các cấu trúc phụ như \texttt{slot[]} hoặc \texttt{w
 nếu hệ thống cần quản lý trạng thái chi tiết của từng vị trí đỗ, ta vẫn
 phải dùng mutex hoặc monitor.
 
-\subsubsection*{4. Nhắc nhở (Visual Aid)}
+\subsubsection*{Sơ đồ minh họa}
 
 \begin{figure}[H]
 \centering
@@ -774,9 +783,9 @@ $\quad \longrightarrow \quad$
 
 % =========================================================
 
-\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+\subsection{Ràng buộc đồng bộ}
 
-\subsubsection*{1. Loại trừ tương hỗ (Mutual Exclusion)}
+\subsubsection*{Loại trừ tương hỗ}
 
 Đoạn găng của bài toán nằm ở mọi thao tác đọc/ghi các biến trạng thái của
 bãi đỗ xe, đặc biệt là:
@@ -793,7 +802,7 @@ Không được có hai luồng cùng thao tác lên các dữ liệu này cùng
 nếu hai xe cùng chạy \texttt{findEmptySlot(slot)} mà không có mutex, cả hai
 có thể cùng chọn một vị trí đỗ.
 
-\subsubsection*{2. Đồng bộ điều kiện (Condition Synchronization)}
+\subsubsection*{Đồng bộ điều kiện}
 
 Quan hệ chờ -- đánh thức trong bài toán như sau:
 
@@ -811,7 +820,7 @@ Trong lời giải semaphore cơ bản, quan hệ này được biểu diễn b�
 \texttt{signal(spots)}: xe rời bãi trả lại một chỗ
 \end{center}
 
-\subsubsection*{3. Giới hạn năng lực (Capacity Limits)}
+\subsubsection*{Giới hạn năng lực}
 
 Bãi đỗ xe có giới hạn vật lý là \texttt{CAPACITY}. Tại mọi thời điểm phải
 luôn có:
@@ -823,7 +832,7 @@ Nếu \texttt{occupied = CAPACITY}, mọi xe đến sau phải bị chặn ngoà
 hoặc đưa vào hàng chờ. Không được cho xe vào chỉ vì xe đọc được trạng thái
 cũ trước khi một xe khác cập nhật biến đếm.
 
-\subsubsection*{4. Quy tắc ưu tiên \& Công bằng (Fairness/Priority)}
+\subsubsection*{Công bằng và ưu tiên}
 
 Với bài toán cơ bản, chỉ cần bảo đảm không vượt quá sức chứa. Tuy nhiên,
 trong hệ thống thực tế, ta thường muốn xe chờ được phục vụ công bằng. Nếu
@@ -837,9 +846,9 @@ vô hạn.
 
 % =========================================================
 
-\subsection{Phân tích thử thách \& Lỗi tiềm ẩn (Challenges \& Pitfalls)}
+\subsection{Phân tích lỗi tiềm ẩn}
 
-\subsubsection*{1. Nguy cơ Race Condition}
+\subsubsection*{Race condition}
 
 Một lỗi phổ biến là tự quản lý biến \texttt{freeSlots} mà không bảo vệ bằng
 mutex. Giả sử ban đầu bãi chỉ còn đúng một chỗ trống:
@@ -879,7 +888,7 @@ Semaphore \texttt{spots} đảm bảo số lượng xe không vượt quá giớ
 nhưng không đảm bảo thao tác chọn vị trí cụ thể trong \texttt{slot[]} là
 an toàn. Vì vậy, việc tìm và ghi vị trí đỗ phải nằm trong đoạn găng.
 
-\subsubsection*{2. Phân tích Bế tắc (Deadlock)}
+\subsubsection*{Deadlock}
 
 Bài toán bãi đỗ xe cơ bản thường không gây deadlock nếu xe chỉ lấy một
 tài nguyên duy nhất là \texttt{spots}, rồi trả lại nó khi rời bãi. Tuy
@@ -905,7 +914,7 @@ Nếu xe vào giữ \texttt{gateMutex} rồi chờ \texttt{slotMutex}, còn xe r
 Đây là circular wait. Cách tránh là dùng một mutex chung cho trạng thái bãi
 hoặc quy định mọi luồng luôn lấy khóa theo cùng một thứ tự.
 
-\subsubsection*{3. Đói tài nguyên (Starvation) \& Livelock}
+\subsubsection*{Starvation / fairness}
 
 Starvation có thể xảy ra nếu semaphore hoặc cơ chế đánh thức không công
 bằng. Một xe đã chờ lâu có thể không bao giờ được đánh thức nếu các xe mới
@@ -916,7 +925,7 @@ cho xe VIP vào trước, một dòng xe VIP liên tục có thể khiến xe th
 đầu hàng không bao giờ được vào. Hệ thống vẫn hoạt động, xe vẫn ra vào,
 nhưng một nhóm luồng bị bỏ đói.
 
-\subsubsection*{4. Đoạn mã lỗi minh họa}
+\subsubsection*{Đoạn mã lỗi minh họa}
 
 Đoạn code sau là một lời giải ngây thơ. Nó có vẻ đúng vì kiểm tra còn chỗ
 trước khi cho xe vào, nhưng thực chất gây race condition:
@@ -973,9 +982,9 @@ xe bên ngoài chờ mãi.
 
 % =========================================================
 
-\subsection{Giải pháp \& Mã giả chi tiết (Proposed Solution \& Pseudocode)}
+\subsection{Giải pháp đề xuất}
 
-\subsubsection*{1. Chiến lược tiếp cận}
+\subsubsection*{Chiến lược tiếp cận}
 
 Giải pháp đề xuất dùng hai lớp đồng bộ:
 
@@ -993,7 +1002,9 @@ chờ.
 Nếu đề bài yêu cầu công bằng mạnh hơn, ta dùng monitor với hàng chờ FIFO:
 xe nào phải chờ trước thì được đánh thức trước.
 
-\subsubsection*{2. Khởi tạo cấu trúc dữ liệu \& Biến đồng bộ}
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
 
 \begin{lstlisting}
 #define CAPACITY 100
@@ -1015,7 +1026,7 @@ int slot[CAPACITY];
 Trước khi hệ thống bắt đầu, ta khởi tạo toàn bộ \texttt{slot[i] = -1} để
 biểu diễn mọi vị trí đều đang trống.
 
-\subsubsection*{3. Mã giả cho từng thực thể (Pseudocode)}
+\subsubsection*{Mã giả cho từng thực thể}
 
 \paragraph{Hàm phụ trợ tìm chỗ trống.}
 
@@ -1082,69 +1093,75 @@ Trong lời giải này, \texttt{wait(spots)} xử lý điều kiện ``bãi cò
 không'', còn \texttt{stateMutex} xử lý việc cập nhật dữ liệu dùng chung
 một cách nguyên tử.
 
-\subsubsection*{4. Biến thể công bằng bằng monitor FIFO}
+\subsubsection*{Biến thể công bằng bằng FIFO và private semaphore}
 
 Nếu đề bài yêu cầu xe chờ được phục vụ đúng thứ tự, semaphore đếm tiêu
-chuẩn có thể chưa đủ. Khi đó, ta dùng monitor với hàng đợi FIFO tường minh.
-Mỗi xe có một semaphore riêng. Khi bãi đầy, xe tự đưa mình vào cuối hàng
-\texttt{waitQ} và ngủ trên semaphore riêng đó.
+chuẩn có thể chưa đủ. Khi đó, ta dùng một hàng đợi FIFO tường minh và
+semaphore riêng cho từng xe. Xe chỉ ngủ trên semaphore riêng sau khi đã
+nhả mutex bảo vệ bãi, nhờ vậy xe rời bãi vẫn có thể lấy mutex để đặt chỗ
+và đánh thức xe đứng đầu hàng.
 
 \begin{lstlisting}
-monitor ParkingLot {
-    int freeSlots = CAPACITY;
-    int occupied = 0;
+semaphore fifoMutex = 1;
 
-    Queue waitQ;
-    // Hang doi FIFO cac xe dang cho.
+int freeSlots = CAPACITY;
+int occupied = 0;
 
-    procedure enter(CarRequest self) {
-        if (freeSlots > 0 && waitQ.isEmpty()) {
-            freeSlots = freeSlots - 1;
-            occupied = occupied + 1;
+Queue waitQ;
+// Hang doi FIFO cac xe dang cho.
 
-            self.granted = true;
-            return;
-        }
+EnterFIFO(CarRequest *self) {
+    wait(fifoMutex);
 
-        waitQ.enqueue(self);
-        // Xe phai cho vi bai day hoac vi co xe khac den truoc.
+    if (freeSlots > 0 && waitQ.empty()) {
+        freeSlots = freeSlots - 1;
+        occupied = occupied + 1;
 
-        self.granted = false;
-
-        while (!self.granted) {
-            self.sem.wait();
-            // Cho den khi monitor danh thuc dung xe nay.
-        }
+        signal(fifoMutex);
+        return;
     }
 
-    procedure leave() {
-        occupied = occupied - 1;
-        // Xe hien tai roi bai, giai phong mot cho.
+    self->granted = false;
+    waitQ.enqueue(self);
+    // Xe phai cho vi bai day hoac vi co xe khac den truoc.
 
-        if (!waitQ.isEmpty()) {
-            CarRequest next = waitQ.dequeue();
-            // Chon xe dung dau hang FIFO.
+    signal(fifoMutex);
+    // Nha mutex truoc khi ngu, tranh chan xe roi bai.
 
-            occupied = occupied + 1;
-            // Dat truoc cho trong cho xe duoc goi vao.
+    wait(self->sem);
+    // Da duoc dat cho truoc boi xe vua roi bai.
+}
 
-            next.granted = true;
+LeaveFIFO() {
+    wait(fifoMutex);
 
-            next.sem.signal();
-            // Danh thuc dung xe dang dung dau hang cho.
-        }
-        else {
-            freeSlots = freeSlots + 1;
-            // Khong co xe cho, tra cho ve bo dem freeSlots.
-        }
+    occupied = occupied - 1;
+    // Xe hien tai roi bai, giai phong mot cho.
+
+    if (!waitQ.empty()) {
+        CarRequest *next = waitQ.dequeue();
+        // Chon xe dung dau hang FIFO.
+
+        occupied = occupied + 1;
+        // Dat truoc cho trong cho xe duoc goi vao.
+
+        next->granted = true;
+        signal(next->sem);
+        // Danh thuc dung xe dang dung dau hang cho.
     }
+    else {
+        freeSlots = freeSlots + 1;
+        // Khong co xe cho, tra cho ve bo dem freeSlots.
+    }
+
+    signal(fifoMutex);
 }
 \end{lstlisting}
 
-\paragraph{Luồng xe dùng monitor FIFO.}
+\paragraph{Luồng xe dùng FIFO và private semaphore.}
 
 \begin{lstlisting}
-CarThreadWithMonitor(int carId) {
+CarThreadWithFIFO(int carId) {
     CarRequest self;
 
     self.id = carId;
@@ -1153,7 +1170,7 @@ CarThreadWithMonitor(int carId) {
 
     arriveAtParkingLot(carId);
 
-    ParkingLot.enter(self);
+    EnterFIFO(&self);
     // Cho den khi xe duoc cap mot cho trong theo thu tu FIFO.
 
     enterParkingLot(carId);
@@ -1161,19 +1178,19 @@ CarThreadWithMonitor(int carId) {
 
     useParkingSpace(carId);
 
-    ParkingLot.leave();
+    LeaveFIFO();
     // Tra cho va danh thuc xe dau hang neu co.
 
     leaveParkingLot(carId);
 }
 \end{lstlisting}
 
-Điểm quan trọng của monitor là khi có xe đang chờ, chỗ trống không được
+Điểm quan trọng của biến thể FIFO là khi có xe đang chờ, chỗ trống không được
 trả về \texttt{freeSlots} cho mọi xe cùng tranh. Thay vào đó, chỗ đó được
 đặt trước cho xe đứng đầu hàng. Nhờ vậy, xe mới đến không thể chen ngang
-xe đã chờ lâu.
+xe đã chờ lâu, và xe chờ không giữ \texttt{fifoMutex} trong lúc ngủ.
 
-\subsubsection*{5. Kiểm chứng (Walkthrough/Dry-run)}
+\subsection{Kiểm chứng ngắn}
 
 Giả sử \texttt{CAPACITY = 2}. Ban đầu \texttt{occupied = 0} và
 \texttt{spots = 2}. Xe thứ nhất gọi \texttt{wait(spots)} thành công, vào
@@ -1189,29 +1206,574 @@ xe thứ nhất rời bãi, nó xóa vị trí của mình trong \texttt{slot[]}
 Giải pháp tránh race condition vì mọi thao tác với \texttt{occupied} và
 \texttt{slot[]} đều nằm dưới \texttt{stateMutex}. Giải pháp tránh deadlock
 vì xe không giữ \texttt{stateMutex} khi đang chờ \texttt{spots}; thứ tự lấy
-và trả tài nguyên rõ ràng. Với phiên bản monitor FIFO, starvation được hạn
+và trả tài nguyên rõ ràng. Với phiên bản FIFO bằng private semaphore, starvation được hạn
 chế vì xe chờ trước được đánh thức trước, xe mới đến không thể vượt hàng.
 
+\subsection{Kết luận bài toán}
+
+Bài toán Parking Lot là ví dụ điển hình của tài nguyên hữu hạn có nhiều tiến
+trình cạnh tranh. Semaphore đếm quản lý số chỗ trống, còn mutex bảo vệ bản đồ
+trạng thái chi tiết của bãi đỗ. Khi cần công bằng hơn, hàng đợi FIFO và
+semaphore riêng giúp đặt chỗ trước cho xe đến trước, tránh việc xe mới chen
+ngang xe đã chờ.
+
+\newpage
 \section{Bài toán Tiệc ăn Sushi (Sushi Bar Problem)}
 
-Bài toán mô phỏng một quán sushi có số ghế giới hạn. Khách chỉ được ngồi khi còn ghế, và những khách đến sau phải chờ nếu quán đầy. Một số biến thể yêu cầu xử lý theo nhóm hoặc theo lượt để tránh chen ngang.
+\subsection{Mô tả bài toán}
 
-Các ý chính cần triển khai:
+\subsubsection*{Cốt truyện và bối cảnh}
+
+Bài toán Tiệc ăn Sushi (\textit{Sushi Bar Problem}) được Downey trình bày
+trong nhóm các bài toán đồng bộ ``không hoàn toàn kinh điển'', lấy cảm hứng
+từ một bài toán do Kenneth Reek đề xuất \cite[Sec.~7.1]{downey2016}. Mô hình
+gồm một quán sushi nhỏ có đúng 5 chỗ ngồi. Khách đến quán theo các thời điểm
+khác nhau, muốn ngồi vào quầy, ăn sushi rồi rời đi.
+
+Ràng buộc đặc biệt của bài toán nằm ở cách chia lượt. Nếu khách đến khi quầy
+còn ghế trống, khách có thể ngồi ngay. Nhưng nếu khách đến khi cả 5 ghế đều
+đang kín, ta xem 5 khách hiện tại như một nhóm đang ăn cùng nhau; khách đến
+sau phải chờ cho đến khi toàn bộ nhóm hiện tại rời quầy thì mới được ngồi
+\cite[Sec.~7.1]{downey2016}. Vì vậy, bài toán không chỉ là bài toán đếm ghế
+trống đơn giản. Hệ thống còn phải đóng lượt khi quầy đầy và mở lượt mới sau
+khi nhóm cũ rời hết.
+
+Mục tiêu của hệ thống là đảm bảo:
+
 \begin{itemize}
-    \item Mô tả số ghế như tài nguyên hữu hạn.
-    \item Thiết kế cơ chế khách vào, ăn và rời quán.
-    \item Phân tích cách dùng semaphore đếm cho ghế trống.
-    \item Bổ sung chính sách công bằng nếu cần tránh starvation.
+    \item Số khách đang ngồi tại quầy không bao giờ vượt quá 5.
+    \item Khách đến khi còn ghế trống được phép ngồi ngay.
+    \item Khách đến sau khi quầy đã đầy phải chờ toàn bộ nhóm hiện tại rời đi.
+    \item Khi mở lượt mới, hệ thống đánh thức tối đa 5 khách đang chờ, theo
+    thứ tự công bằng.
+    \item Không xảy ra race condition, deadlock hoặc starvation do khách mới
+    chen ngang khách đã chờ lâu.
 \end{itemize}
 
+\subsection{Các thực thể tham gia}
+
+\paragraph{Khách hàng (Customer).}
+Mỗi khách hàng là một tiến trình độc lập. Khách đến quán, xin quyền ngồi, có
+thể phải chờ nếu quầy đang đóng lượt, sau đó ăn và rời quầy.
+
+\begin{center}
+\texttt{Đến quán $\rightarrow$ Xin ghế $\rightarrow$ Chờ nếu quầy đầy
+$\rightarrow$ Ăn $\rightarrow$ Rời quầy}
+\end{center}
+
+\paragraph{Quầy sushi (Sushi Bar).}
+Quầy sushi là tài nguyên dùng chung có sức chứa hữu hạn. Trạng thái quan trọng
+của quầy gồm:
+
+\begin{itemize}
+    \item \texttt{eating}: số khách hiện đang ngồi ăn.
+    \item \texttt{waiting}: số khách đang chờ bên ngoài.
+    \item \texttt{mustWait}: cờ cho biết quầy đã đóng lượt vì từng đạt trạng
+    thái đủ 5 khách.
+    \item \texttt{CAPACITY = 5}: số ghế tối đa của quầy.
+\end{itemize}
+
+Điểm khác biệt so với semaphore đếm thông thường là cờ \texttt{mustWait}. Khi
+quầy đủ 5 khách, cờ này được bật và các khách đến sau không được tranh các ghế
+vừa trống lẻ tẻ; họ phải đợi nhóm hiện tại rời hết.
+
+\subsection{Tài nguyên dùng chung}
+
+Các tài nguyên và biến trạng thái dùng chung gồm quầy sushi có sức chứa
+\texttt{CAPACITY = 5}, biến \texttt{eating} đếm số khách đang ăn, biến
+\texttt{waiting} đếm số khách đang chờ, cờ \texttt{mustWait} biểu diễn trạng
+thái đóng lượt, mutex bảo vệ các biến này và semaphore \texttt{block} dùng để
+chặn khách chờ lượt mới.
+
+\subsection{Ràng buộc đồng bộ}
+
+\subsubsection*{Loại trừ tương hỗ}
+
+Đoạn găng của bài toán là mọi thao tác đọc/ghi các biến trạng thái:
+\texttt{eating}, \texttt{waiting} và \texttt{mustWait}. Các thao tác sau phải
+được thực hiện dưới cùng một mutex:
+
+\begin{itemize}
+    \item Kiểm tra quầy còn ghế hay đang đóng lượt.
+    \item Tăng \texttt{eating} khi một khách được đặt chỗ.
+    \item Giảm \texttt{eating} khi một khách rời quầy.
+    \item Tăng/giảm \texttt{waiting} khi khách vào hoặc ra khỏi hàng chờ.
+    \item Quyết định nhóm khách chờ nào được đánh thức cho lượt kế tiếp.
+\end{itemize}
+
+Nếu các biến này không được bảo vệ, hai khách có thể cùng thấy còn một ghế cuối
+cùng và cùng ngồi, làm \texttt{eating > 5}. Ngược lại, nếu cập nhật
+\texttt{mustWait} sai thời điểm, khách mới có thể chen vào trước nhóm đang chờ.
+
+\subsubsection*{Đồng bộ điều kiện}
+
+Khách phải chờ khi \texttt{mustWait = true}. Cờ này được bật khi quầy đạt đủ
+5 khách. Sau đó, dù có một vài khách trong nhóm hiện tại rời đi, các khách chờ
+vẫn chưa được ngồi ngay; họ chỉ được đánh thức khi \texttt{eating = 0}, tức là
+cả nhóm hiện tại đã rời hết.
+
+Quan hệ chờ -- đánh thức có thể mô tả như sau:
+
+\begin{center}
+\texttt{Quầy đầy $\rightarrow$ khách mới chờ}
+\qquad
+\texttt{Nhóm hiện tại rời hết $\rightarrow$ mở lượt mới}
+\end{center}
+
+\subsubsection*{Giới hạn năng lực}
+
+Sức chứa tối đa của quầy là:
+
+\[
+    \texttt{CAPACITY = 5}.
+\]
+
+Bất biến an toàn cần giữ trong toàn bộ quá trình chạy là:
+
+\[
+    0 \leq \texttt{eating} \leq 5.
+\]
+
+Khi mở lượt mới, hệ thống chỉ được đánh thức tối đa 5 khách đang chờ. Nếu hàng
+chờ có ít hơn 5 khách, tất cả khách đang chờ có thể được ngồi và quầy chưa cần
+đóng lượt. Nếu hàng chờ có từ 5 khách trở lên, đúng 5 khách đầu tiên được đặt
+chỗ và lượt mới lại ở trạng thái đầy.
+
+\subsubsection*{Công bằng và ưu tiên}
+
+Để hạn chế starvation, hàng chờ được giả định là FIFO: khách nào đã chờ trước
+thì được gọi trước trong lượt kế tiếp. Trong mã giả bên dưới, semaphore
+\texttt{block} được hiểu là FIFO semaphore; nếu môi trường triển khai không
+bảo đảm FIFO, cần thay \texttt{block} bằng hàng đợi tường minh gồm semaphore
+riêng cho từng khách.
+
+\subsection{Phân tích lỗi tiềm ẩn}
+
+\subsubsection*{Race condition}
+
+Một lỗi phổ biến là xử lý bài toán như một bài toán ghế trống thông thường:
+
+\begin{lstlisting}
+// Giai phap sai: check-and-sit khong nguyen tu
+if (eating < CAPACITY) {
+    eating = eating + 1;
+    eat();
+}
+\end{lstlisting}
+
+Nếu hai khách cùng đọc \texttt{eating = 4}, cả hai đều thấy còn ghế và cùng
+tăng biến đếm. Kết quả là có 6 khách ngồi tại quầy, vi phạm giới hạn sức chứa.
+
+\subsubsection*{Sai điều kiện mở lượt}
+
+Một lời giải khác có thể cho khách đang chờ vào ngay khi một ghế bất kỳ trống:
+
+\begin{lstlisting}
+// Sai voi dac ta Sushi Bar
+leave() {
+    eating = eating - 1;
+    signal(waitingCustomer);
+}
+\end{lstlisting}
+
+Đoạn mã này giữ đúng giới hạn số ghế, nhưng sai đặc tả. Khi quầy đã đầy, khách
+đến sau phải chờ toàn bộ nhóm hiện tại rời đi, không phải chỉ chờ một ghế trống
+xuất hiện. Đây là điểm làm bài toán Sushi Bar khác với bài toán bãi đỗ xe hoặc
+phòng đọc giới hạn.
+
+\subsubsection*{Deadlock}
+
+Deadlock có thể xảy ra nếu một khách giữ \texttt{mutex} trong khi ngủ chờ lượt
+mới. Khi đó, các khách đang ăn không thể lấy mutex để giảm \texttt{eating} lúc
+rời quầy, nên \texttt{eating} không bao giờ về 0 và nhóm chờ cũng không bao
+giờ được đánh thức.
+
+Vì vậy, nếu khách phải chờ, tiến trình đó phải rời đoạn găng trước khi gọi
+\texttt{wait(block)}.
+
+\subsubsection*{Starvation / fairness}
+
+Nếu việc đánh thức không theo FIFO, khách đã chờ ở lượt trước có thể bị khách
+mới đến vượt qua. Lời giải đề xuất giảm nguy cơ này bằng cách xem các khách
+đang chờ là một hàng đợi và khi mở lượt mới thì đặt chỗ trước cho tối đa 5
+khách đầu hàng.
+
+Livelock không xuất hiện trong lời giải đúng vì mỗi lần lượt được mở, ít nhất
+một khách đang chờ được chuyển sang trạng thái ăn, hoặc nếu không còn ai chờ thì
+quầy quay lại trạng thái mở bình thường.
+
+\subsection{Giải pháp đề xuất}
+
+\subsubsection*{Chiến lược tiếp cận}
+
+Lời giải sử dụng mẫu \textit{scoreboard}: các biến \texttt{eating},
+\texttt{waiting} và \texttt{mustWait} mô tả trạng thái hiện tại của quầy. Một
+mutex bảo vệ bảng trạng thái này. Semaphore \texttt{block} dùng để chặn khách
+đến muộn và đánh thức họ khi nhóm hiện tại rời hết; semaphore này được giả định
+có thứ tự đánh thức FIFO.
+
+Ý tưởng chính:
+
+\begin{itemize}
+    \item Nếu \texttt{mustWait = false}, khách được đặt chỗ ngay bằng cách tăng
+    \texttt{eating}.
+    \item Nếu sau khi đặt chỗ mà \texttt{eating = 5}, quầy chuyển sang trạng
+    thái \texttt{mustWait = true}.
+    \item Nếu khách đến khi \texttt{mustWait = true}, khách tăng
+    \texttt{waiting}, nhả mutex và ngủ trên \texttt{block}.
+    \item Khách cuối cùng rời khỏi nhóm hiện tại sẽ mở lượt mới cho tối đa
+    5 khách đang chờ.
+\end{itemize}
+
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+
+\begin{lstlisting}
+const int CAPACITY = 5;
+
+int eating = 0;             // So khach dang ngoi tai quay
+int waiting = 0;            // So khach dang cho ben ngoai
+bool mustWait = false;      // Quay da dong luot hay chua
+
+semaphore mutex = 1;        // Bao ve eating, waiting, mustWait
+semaphore block = 0;        // FIFO semaphore chan khach cho luot moi
+\end{lstlisting}
+
+\subsubsection*{Mã giả cho khách hàng}
+
+\begin{lstlisting}
+Customer() {
+    wait(mutex);
+
+    if (mustWait) {
+        waiting = waiting + 1;
+
+        signal(mutex);
+        wait(block);
+        // Da duoc dat cho truoc boi khach cuoi cung cua luot truoc.
+    }
+    else {
+        eating = eating + 1;
+
+        if (eating == CAPACITY) {
+            mustWait = true;
+            // Tu thoi diem nay, khach den sau phai cho ca nhom roi het.
+        }
+
+        signal(mutex);
+    }
+
+    eatSushi();
+
+    wait(mutex);
+
+    eating = eating - 1;
+
+    if (eating == 0 && mustWait) {
+        int n = min(CAPACITY, waiting);
+
+        if (n == 0) {
+            mustWait = false;
+            // Khong con ai cho, quay mo binh thuong.
+        }
+        else {
+            waiting = waiting - n;
+            eating = n;
+            // Dat cho truoc cho n khach dang cho.
+
+            mustWait = (eating == CAPACITY);
+
+            for (int i = 1; i <= n; i++) {
+                signal(block);
+            }
+        }
+    }
+
+    signal(mutex);
+}
+\end{lstlisting}
+
+\subsection{Kiểm chứng ngắn}
+
+Giả sử quầy đang có 4 khách. Một khách mới đến, lấy \texttt{mutex}, tăng
+\texttt{eating} lên 5 và đặt \texttt{mustWait = true}. Từ thời điểm này, mọi
+khách mới đến đều tăng \texttt{waiting} rồi ngủ trên \texttt{block}.
+
+Khi một trong 5 khách hiện tại rời đi, \texttt{eating} giảm xuống 4 nhưng
+\texttt{mustWait} vẫn là \texttt{true}, nên chưa ai được đánh thức. Chỉ khi
+khách cuối cùng rời đi và \texttt{eating = 0}, hệ thống mới lấy tối đa 5 khách
+từ hàng chờ, đặt chỗ trước cho họ bằng cách tăng \texttt{eating}, rồi phát đúng
+số tín hiệu trên \texttt{block}. Nhờ vậy, khách chờ không tự tranh ghế và
+khách mới đến không thể chen vào trước nhóm đã đợi.
+
+\subsection{Kết luận bài toán}
+
+Bài toán Tiệc ăn Sushi cho thấy một giới hạn tài nguyên đơn giản có thể trở nên
+phức tạp hơn khi hệ thống có thêm khái niệm ``lượt''. Lời giải không chỉ cần
+giữ số khách không vượt quá 5, mà còn phải bảo đảm khách đến khi quầy đã đầy
+chỉ được phục vụ sau khi toàn bộ nhóm hiện tại rời đi. Mẫu scoreboard kết hợp
+mutex và semaphore giúp biểu diễn rõ trạng thái quầy, tránh race condition và
+hạn chế starvation.
+
+\newpage
 \section{Bài toán Bữa ăn tập thể (Dining Savages Problem)}
 
-Bài toán Dining Savages mô tả một nồi thức ăn chung có số phần hữu hạn. Các savage lấy phần ăn từ nồi; nếu nồi hết, một người phải đánh thức đầu bếp để nấu thêm.
+\subsection{Mô tả bài toán}
 
-Các ý chính cần triển khai:
+\subsubsection*{Cốt truyện và bối cảnh}
+
+Bài toán Bữa ăn tập thể, thường được biết đến với tên
+\textit{Dining Savages Problem}, xuất phát từ tài liệu của Andrews và được
+Downey trình bày lại trong \textit{The Little Book of Semaphores}
+\cite{andrews}\cite[Sec.~5.1]{downey2016}. Bài toán mô phỏng một nhóm người
+cùng lấy thức ăn từ một nồi chung. Nồi có thể chứa tối đa \texttt{M} phần ăn.
+Mỗi người khi muốn ăn sẽ lấy một phần từ nồi; nếu nồi hết, một người phải đánh
+thức đầu bếp và chờ đến khi đầu bếp nấu đầy nồi.
+
+Đặc tả đồng bộ quan trọng gồm hai điều kiện:
+
 \begin{itemize}
-    \item Xác định nồi thức ăn là tài nguyên găng.
-    \item Bảo vệ số phần ăn còn lại bằng mutex.
-    \item Dùng semaphore để đánh thức đầu bếp khi nồi rỗng.
-    \item Đảm bảo chỉ một savage gọi đầu bếp trong mỗi lần nồi hết.
+    \item Người ăn không được gọi \texttt{getServingFromPot()} nếu nồi đang rỗng.
+    \item Đầu bếp chỉ được gọi \texttt{putServingsInPot(M)} khi nồi đang rỗng.
 \end{itemize}
+
+Hai điều kiện này làm bài toán khác với producer--consumer thông thường. Ở đây
+không có nhiều producer liên tục tạo phần ăn; chỉ có một đầu bếp được đánh thức
+khi và chỉ khi nồi đã cạn.
+
+\subsection{Các thực thể tham gia}
+
+\paragraph{Người ăn (Diner).}
+Mỗi người ăn là một tiến trình độc lập, lặp lại chu trình lấy một phần ăn rồi
+ăn bên ngoài đoạn găng.
+
+\begin{center}
+\texttt{Muốn ăn $\rightarrow$ Kiểm tra nồi $\rightarrow$ Lấy phần ăn
+$\rightarrow$ Ăn}
+\end{center}
+
+\paragraph{Đầu bếp (Cook).}
+Đầu bếp là tiến trình nạp lại tài nguyên. Đầu bếp ngủ khi nồi còn thức ăn và
+chỉ được đánh thức khi có người phát hiện nồi rỗng.
+
+\begin{center}
+\texttt{Ngủ $\rightarrow$ Được gọi khi nồi rỗng $\rightarrow$ Nấu đầy nồi
+$\rightarrow$ Báo nồi đầy}
+\end{center}
+
+\paragraph{Nồi thức ăn (Pot).}
+Nồi là tài nguyên dùng chung, được mô hình hóa bằng biến
+\texttt{servings}. Biến này cho biết số phần ăn còn lại trong nồi và phải được
+bảo vệ bằng mutex.
+
+\subsection{Tài nguyên dùng chung}
+
+Các tài nguyên dùng chung gồm nồi thức ăn có sức chứa tối đa \texttt{M}, biến
+\texttt{servings} biểu diễn số phần ăn còn lại, mutex bảo vệ biến này và hai
+semaphore \texttt{emptyPot}, \texttt{fullPot} để rendezvous giữa người ăn với
+đầu bếp.
+
+\subsection{Ràng buộc đồng bộ}
+
+\subsubsection*{Loại trừ tương hỗ}
+
+Đoạn găng của bài toán là thao tác kiểm tra và cập nhật
+\texttt{servings}. Cụ thể:
+
+\begin{itemize}
+    \item Kiểm tra nồi có rỗng hay không.
+    \item Giảm \texttt{servings} khi một người lấy phần ăn.
+    \item Ghi nhận nồi đã được nạp lại \texttt{M} phần.
+\end{itemize}
+
+Nếu không có mutex, hai người có thể cùng đọc \texttt{servings = 1} và cùng
+lấy phần cuối cùng, làm biến đếm âm hoặc làm hai tiến trình cùng dùng một phần
+ăn.
+
+\subsubsection*{Đồng bộ điều kiện}
+
+Quan hệ chờ -- đánh thức trong bài toán gồm:
+
+\begin{itemize}
+    \item Người đầu tiên phát hiện \texttt{servings = 0} đánh thức đầu bếp bằng
+    \texttt{emptyPot}.
+    \item Người đó chờ trên \texttt{fullPot} cho đến khi đầu bếp nấu xong.
+    \item Đầu bếp chỉ hoạt động sau khi nhận tín hiệu \texttt{emptyPot}.
+    \item Sau khi nấu đầy nồi, đầu bếp phát tín hiệu \texttt{fullPot}.
+\end{itemize}
+
+Do người ăn giữ \texttt{mutex} trong lúc chờ \texttt{fullPot}, không có người
+ăn thứ hai nào có thể đồng thời phát tín hiệu gọi đầu bếp cho cùng một lần nồi
+rỗng. Điều này bảo đảm mỗi lần nồi cạn chỉ có một yêu cầu nạp lại.
+
+\subsubsection*{Giới hạn năng lực}
+
+Nồi có sức chứa tối đa \texttt{M} phần. Bất biến cần giữ là:
+
+\[
+    0 \leq \texttt{servings} \leq M.
+\]
+
+Đầu bếp không được nấu thêm nếu nồi chưa rỗng, vì điều đó có thể làm số phần ăn
+vượt quá sức chứa hoặc làm mất ý nghĩa của tài nguyên hữu hạn.
+
+\subsubsection*{Công bằng và ưu tiên}
+
+Nếu mutex hoặc semaphore không có tính công bằng, một người ăn có thể bị chờ
+lâu khi nhiều tiến trình cạnh tranh liên tục. Trong báo cáo này, ta giả định
+mutex/semaphore đánh thức theo chính sách đủ công bằng, hoặc có thể thay bằng
+hàng đợi FIFO nếu muốn đảm bảo bounded waiting mạnh hơn.
+
+\subsection{Phân tích lỗi tiềm ẩn}
+
+\subsubsection*{Race condition}
+
+Đoạn mã ngây thơ sau vi phạm mutual exclusion:
+
+\begin{lstlisting}
+// Giai phap sai: servings khong duoc bao ve
+if (servings == 0) {
+    wakeCook();
+}
+
+servings = servings - 1;
+getServingFromPot();
+\end{lstlisting}
+
+Nếu hai người cùng thấy \texttt{servings = 1}, cả hai có thể cùng giảm biến
+đếm và cùng lấy phần ăn. Nếu nhiều người cùng thấy \texttt{servings = 0}, họ có
+thể cùng đánh thức đầu bếp nhiều lần cho cùng một lần nồi rỗng.
+
+\subsubsection*{Đánh thức đầu bếp sai thời điểm}
+
+Đầu bếp chỉ được nấu khi nồi rỗng. Nếu một người đánh thức đầu bếp khi
+\texttt{servings > 0}, đầu bếp có thể gọi \texttt{putServingsInPot(M)} khi nồi
+vẫn còn thức ăn. Khi đó hệ thống hoặc vượt sức chứa, hoặc ghi đè trạng thái nồi
+và làm sai số phần ăn còn lại.
+
+\subsubsection*{Deadlock}
+
+Một lỗi thường gặp là người ăn đánh thức đầu bếp nhưng vẫn yêu cầu đầu bếp lấy
+cùng mutex trước khi nạp nồi:
+
+\begin{lstlisting}
+// Giai phap sai neu Cook cung can mutex nay de nap noi
+wait(mutex);
+if (servings == 0) {
+    signal(emptyPot);
+    wait(fullPot);     // Van giu mutex khi cho Cook.
+}
+signal(mutex);
+\end{lstlisting}
+
+Nếu đầu bếp cũng cần \texttt{mutex} để thực hiện \texttt{putServingsInPot(M)},
+hệ thống sẽ deadlock: người ăn giữ mutex và chờ đầu bếp, còn đầu bếp chờ chính
+mutex đó. Trong lời giải bên dưới, đầu bếp không thao tác trực tiếp lên
+\texttt{servings}; người ăn sau khi nhận tín hiệu \texttt{fullPot} sẽ cập nhật
+\texttt{servings = M} trong đoạn găng của mình. Đây là cách tổ chức được Downey
+trình bày như một kết hợp giữa scoreboard và rendezvous
+\cite[Sec.~5.1]{downey2016}.
+
+\subsubsection*{Starvation / fairness}
+
+Starvation có thể xảy ra nếu cùng một nhóm tiến trình liên tục lấy được mutex
+trước các tiến trình khác. Tuy nhiên, bản thân cơ chế nạp nồi không tạo livelock:
+khi nồi rỗng, một tiến trình đánh thức đầu bếp; sau khi đầu bếp nạp nồi, ít nhất
+một người sẽ lấy được phần ăn và hệ thống tiếp tục tiến triển.
+
+\subsection{Giải pháp đề xuất}
+
+\subsubsection*{Chiến lược tiếp cận}
+
+Lời giải sử dụng ba thành phần:
+
+\begin{itemize}
+    \item \texttt{mutex} bảo vệ biến \texttt{servings}.
+    \item \texttt{emptyPot} để người ăn báo cho đầu bếp rằng nồi đã rỗng.
+    \item \texttt{fullPot} để đầu bếp báo lại rằng nồi đã được nấu đầy.
+\end{itemize}
+
+Biến \texttt{servings} đóng vai trò scoreboard. Người ăn đi qua mutex, kiểm tra
+bảng trạng thái, và nếu nồi rỗng thì thực hiện rendezvous với đầu bếp trước khi
+lấy phần ăn.
+
+\subsection{Mã giả}
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+
+\begin{lstlisting}
+const int M = 10;            // Suc chua toi da cua noi
+
+int servings = 0;            // Ban dau noi rong, can goi dau bep lan dau
+
+semaphore mutex = 1;         // Bao ve servings
+semaphore emptyPot = 0;      // Bao dau bep rang noi rong
+semaphore fullPot = 0;       // Bao nguoi an rang noi da day
+\end{lstlisting}
+
+\subsubsection*{Mã giả cho đầu bếp}
+
+\begin{lstlisting}
+Cook() {
+    while (true) {
+        wait(emptyPot);
+        // Chi duoc danh thuc khi co nguoi phat hien noi rong.
+
+        putServingsInPot(M);
+        // Nap lai M phan an vao noi.
+
+        signal(fullPot);
+        // Bao cho nguoi dang cho rang noi da duoc nap day.
+    }
+}
+\end{lstlisting}
+
+\subsubsection*{Mã giả cho người ăn}
+
+\begin{lstlisting}
+Diner() {
+    while (true) {
+        wait(mutex);
+
+        if (servings == 0) {
+            signal(emptyPot);
+            // Chi mot nguoi co the den day vi dang giu mutex.
+
+            wait(fullPot);
+            // Cho dau bep nap noi xong.
+
+            servings = M;
+            // Cap nhat scoreboard sau khi dau bep bao noi da day.
+        }
+
+        servings = servings - 1;
+        getServingFromPot();
+
+        signal(mutex);
+
+        eat();
+    }
+}
+\end{lstlisting}
+
+\subsection{Kiểm chứng ngắn}
+
+Giả sử \texttt{servings = 1}. Người ăn A lấy \texttt{mutex}, thấy nồi còn một
+phần, giảm \texttt{servings} xuống 0, lấy phần ăn rồi nhả mutex. Người ăn B đến
+sau, lấy mutex và thấy \texttt{servings = 0}. B phát tín hiệu
+\texttt{emptyPot} để đánh thức đầu bếp rồi chờ \texttt{fullPot}. Vì B vẫn giữ
+mutex, không người ăn nào khác có thể đồng thời gọi đầu bếp.
+
+Đầu bếp nhận \texttt{emptyPot}, nấu đầy nồi và phát \texttt{fullPot}. B tiếp
+tục chạy, đặt \texttt{servings = M}, sau đó lấy một phần bằng cách giảm
+\texttt{servings} xuống \texttt{M - 1}. Như vậy, người ăn không bao giờ lấy đồ
+ăn từ nồi rỗng, còn đầu bếp chỉ nấu khi nồi rỗng thật sự.
+
+\subsection{Kết luận bài toán}
+
+Bài toán Bữa ăn tập thể minh họa rõ mối quan hệ giữa mutual exclusion và đồng
+bộ điều kiện. Mutex bảo vệ biến đếm tài nguyên, còn hai semaphore
+\texttt{emptyPot} và \texttt{fullPot} tạo rendezvous giữa người ăn và đầu bếp.
+Lời giải đúng phải bảo đảm mỗi lần nồi rỗng chỉ có một yêu cầu nạp lại, đầu bếp
+không nấu khi nồi còn thức ăn và không người ăn nào lấy phần ăn từ nồi rỗng.
