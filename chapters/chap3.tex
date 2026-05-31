@@ -1,50 +1,1198 @@
 \chapter{Nhóm bài toán giới hạn tài nguyên và điều phối truy cập}
 
-\section{Bài toán Phòng đọc sách giới hạn (Room Party Problem) -- Duy}
+\newpage
+\section{Bài toán Phòng đọc sách giới hạn (Room Party Problem)}
+% =========================================================
+% BAI TOAN PHONG DOC SACH GIOI HAN -- ROOM PARTY PROBLEM
+% Format theo template I--IV
+% =========================================================
 
-\textbf{Người phụ trách:} Duy.
+\subsection{Mô tả bài toán (Problem Description)}
 
-Bài toán mô phỏng một căn phòng hoặc khu vực sinh hoạt có giới hạn số người được vào cùng lúc. Cần thiết kế cơ chế đồng bộ để người tham gia chỉ được vào phòng khi điều kiện cho phép, đồng thời đảm bảo phòng không vượt quá sức chứa.
+\subsubsection*{Cốt truyện \& Bối cảnh}
 
-Các ý chính cần triển khai:
+Bài toán Phòng đọc sách giới hạn mô phỏng một phòng đọc, phòng sinh hoạt
+chung hoặc phòng hoạt động nhóm có số chỗ ngồi hữu hạn. Nhiều người có
+thể đến phòng tại các thời điểm độc lập, muốn vào phòng để đọc sách,
+học nhóm hoặc sử dụng tài nguyên bên trong, sau đó rời đi sau một khoảng
+thời gian bất kỳ.
+
+Trong mô hình đồng bộ hóa, phòng đọc đóng vai trò là một tài nguyên dùng
+chung có sức chứa giới hạn, còn mỗi người tham gia được xem như một luồng
+hoặc tiến trình độc lập. Ràng buộc quan trọng nhất là tại mọi thời điểm,
+số người trong phòng không được vượt quá sức chứa tối đa
+\texttt{CAPACITY}. Nếu phòng còn chỗ, người đến có thể vào. Nếu phòng đã
+đầy, người đến sau phải xếp hàng chờ bên ngoài. Khi một người rời phòng,
+một chỗ trống được giải phóng và hệ thống phải đánh thức người phù hợp,
+thường là người đứng đầu hàng chờ.
+
+Mục tiêu cuối cùng của hệ thống là thiết kế cơ chế đồng bộ sao cho:
+
 \begin{itemize}
-    \item Mô tả tài nguyên găng là số chỗ trống trong phòng.
-    \item Xác định điều kiện được vào và điều kiện phải chờ.
-    \item Đề xuất lời giải bằng semaphore đếm hoặc monitor.
-    \item Phân tích nguy cơ starvation nếu một nhóm người liên tục chiếm phòng.
+    \item Số người trong phòng luôn thỏa mãn
+    \[
+        0 \leq \texttt{inside} \leq \texttt{CAPACITY}.
+    \]
+    \item Người đến sau phải chờ nếu phòng đã đầy.
+    \item Khi có chỗ trống, hệ thống đánh thức đúng người đang chờ theo
+    chính sách công bằng.
+    \item Không xảy ra race condition, deadlock hoặc starvation trong quá
+    trình nhiều người cùng xin vào và rời phòng.
 \end{itemize}
 
-\section{Bài toán Bãi đỗ xe giới hạn (Parking Lot Problem) -- Duy}
+Điểm dễ gây nhầm lẫn là bài toán không chỉ yêu cầu ``đếm đúng số người
+trong phòng''. Trong môi trường đa luồng, thao tác kiểm tra còn chỗ và
+thao tác bước vào phòng phải được xem như một hành động nguyên tử. Nếu
+hai tiến trình cùng nhìn thấy phòng còn đúng một chỗ, cả hai có thể cùng
+bước vào nếu thiếu đồng bộ, làm phòng vượt quá sức chứa.
 
-\textbf{Người phụ trách:} Duy.
+\subsubsection*{Các thực thể tham gia (Entities/Threads)}
 
-Bài toán mô tả một bãi đỗ xe có số chỗ hữu hạn. Xe chỉ được vào khi còn chỗ trống và phải trả lại chỗ khi rời bãi. Đây là dạng bài toán tài nguyên đếm điển hình.
+\paragraph{Phòng đọc (Reading Room).}
 
-Các ý chính cần triển khai:
+Phòng đọc là tài nguyên dùng chung có sức chứa hữu hạn. Trạng thái quan
+trọng nhất của phòng là:
+
 \begin{itemize}
-    \item Xem mỗi chỗ đỗ là một đơn vị tài nguyên.
-    \item Dùng semaphore đếm để quản lý số chỗ còn lại.
-    \item Bảo vệ biến trạng thái của bãi xe bằng mutex.
-    \item Đảm bảo xe chờ được đánh thức khi có xe khác rời bãi.
+    \item \texttt{inside}: số người hiện đang ở trong phòng.
+    \item \texttt{CAPACITY}: số người tối đa được phép ở trong phòng.
+    \item \texttt{waitQ}: hàng đợi những người đang chờ bên ngoài.
 \end{itemize}
 
-\section{Bài toán Máy bán vé (Ticket Selling Problem) -- Chưa phân công}
+Trạng thái vòng đời của phòng có thể mô tả như sau:
 
-\textbf{Người phụ trách:} Chưa phân công.
+\begin{center}
+\texttt{Còn chỗ $\rightarrow$ Cho vào \qquad Đầy phòng $\rightarrow$ Chặn người mới}
+\end{center}
 
-Bài toán mô phỏng nhiều quầy hoặc nhiều luồng cùng bán vé từ một kho vé chung. Nếu không đồng bộ, hai người bán có thể cùng bán một vé hoặc làm sai số lượng vé còn lại.
+\paragraph{Người tham gia (Participant).}
 
-Các ý chính cần triển khai:
+Mỗi người tham gia là một luồng độc lập. Người đó đến phòng, xin vào,
+chờ nếu phòng đầy, vào phòng khi được cấp phép, sử dụng phòng, rồi rời
+phòng.
+
+\begin{center}
+\texttt{Đến phòng $\rightarrow$ Xin vào $\rightarrow$ Chờ nếu đầy
+$\rightarrow$ Vào phòng $\rightarrow$ Sử dụng $\rightarrow$ Rời phòng}
+\end{center}
+
+Trong lời giải công bằng, mỗi người có thêm một semaphore riêng
+\texttt{canEnter}. Semaphore này giúp bộ điều phối đánh thức đúng người
+đầu hàng thay vì đánh thức ngẫu nhiên một tiến trình đang chờ.
+
+\paragraph{Bộ điều phối (Coordinator).}
+
+Bộ điều phối là cơ chế chịu trách nhiệm bảo vệ các biến trạng thái dùng
+chung. Nó quyết định:
+
 \begin{itemize}
-    \item Xác định biến dùng chung là số vé còn lại.
-    \item Phân tích race condition khi nhiều quầy cùng cập nhật biến vé.
-    \item Sử dụng mutex để bảo vệ thao tác kiểm tra và trừ vé.
-    \item Xử lý trường hợp hết vé để các luồng dừng đúng cách.
+    \item Người nào được vào ngay.
+    \item Người nào phải xếp hàng chờ.
+    \item Khi có chỗ trống thì người nào được gọi tiếp theo.
 \end{itemize}
 
-\section{Bài toán Tiệc ăn Sushi (Sushi Bar Problem) -- Tuấn}
+Nếu chỉ dùng semaphore đếm mà không có hàng đợi rõ ràng, bài toán có thể
+đúng về sức chứa nhưng chưa chắc đúng về công bằng.
 
-\textbf{Người phụ trách:} Tuấn.
+\subsubsection*{Tài nguyên dùng chung (Shared Resources)}
+
+Các tài nguyên dùng chung trong bài toán gồm:
+
+\begin{itemize}
+    \item Biến \texttt{inside}: số người hiện đang ở trong phòng.
+    \item Hằng số \texttt{CAPACITY}: sức chứa tối đa của phòng.
+    \item Hàng đợi \texttt{waitQ}: hàng đợi FIFO của những người đang chờ.
+    \item Semaphore đếm \texttt{roomSlots}: biểu diễn số chỗ trống còn lại.
+    \item Mutex \texttt{mutex}: bảo vệ \texttt{inside} và \texttt{waitQ}.
+    \item Semaphore riêng \texttt{canEnter} của từng người trong lời giải
+    công bằng.
+\end{itemize}
+
+Các biến như \texttt{inside} và hàng đợi \texttt{waitQ} phải được bảo vệ
+bởi cùng một \texttt{mutex} hoặc nằm bên trong cùng một monitor, vì nhiều
+tiến trình có thể đồng thời xin vào hoặc rời khỏi phòng.
+
+\subsubsection*{Nhắc nhở (Visual Aid)}
+
+\begin{figure}[H]
+\centering
+\fbox{
+\begin{minipage}{0.84\textwidth}
+\centering
+\vspace{0.45cm}
+
+\textbf{Người đến}
+$\quad \longrightarrow \quad$
+\textbf{Kiểm tra sức chứa}
+$\quad \longrightarrow \quad$
+\textbf{Vào phòng nếu còn chỗ}
+
+\vspace{0.6cm}
+
+\textbf{Phòng đầy}
+$\quad \longrightarrow \quad$
+\textbf{Hàng đợi FIFO}
+$\quad \longrightarrow \quad$
+\textbf{Được gọi khi có chỗ trống}
+
+\vspace{0.6cm}
+
+\textit{Số người trong phòng luôn không vượt quá \texttt{CAPACITY}.}
+
+\vspace{0.45cm}
+\end{minipage}
+}
+\caption{Mô hình bài toán phòng đọc có giới hạn sức chứa}
+\label{fig:limited-room-model-new-template}
+\end{figure}
+
+% =========================================================
+
+\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+
+\subsubsection*{Loại trừ tương hỗ (Mutual Exclusion)}
+
+Đoạn găng của bài toán là mọi đoạn mã đọc hoặc cập nhật trạng thái dùng
+chung của phòng đọc, đặc biệt là:
+
+\begin{itemize}
+    \item Kiểm tra \texttt{inside < CAPACITY}.
+    \item Tăng \texttt{inside} khi một người được cấp chỗ.
+    \item Giảm \texttt{inside} khi một người rời phòng.
+    \item Thêm người vào \texttt{waitQ}.
+    \item Lấy người đầu hàng ra khỏi \texttt{waitQ}.
+\end{itemize}
+
+Các thao tác này phải được thực hiện dưới \texttt{mutex} hoặc trong cùng
+một monitor. Nếu không, hai người có thể cùng đọc trạng thái cũ và cùng
+cập nhật sai, khiến phòng vượt quá sức chứa hoặc hàng đợi bị hỏng.
+
+\subsubsection*{Đồng bộ điều kiện (Condition Synchronization)}
+
+Quan hệ chờ--đánh thức trong bài toán như sau:
+
+\begin{itemize}
+    \item Một người phải chờ nếu phòng đã đầy, tức là
+    \texttt{inside == CAPACITY}.
+    \item Trong lời giải FIFO, một người cũng phải chờ nếu đã có người
+    khác đang đứng trong \texttt{waitQ}, dù phòng vừa còn chỗ. Quy tắc này
+    ngăn hiện tượng chen hàng.
+    \item Khi một người rời phòng, hệ thống gọi hàm
+    \texttt{WakeNextIfPossible()} để đánh thức người đầu hàng nếu còn chỗ.
+    \item Người chờ chỉ được đánh thức sau khi hệ thống đã đặt trước cho
+    họ một chỗ bằng cách tăng \texttt{inside}.
+\end{itemize}
+
+Điểm quan trọng là người đang chờ không nên bị đánh thức rồi tự tranh
+chấp chỗ trống. Bộ điều phối phải đặt chỗ trước, sau đó mới
+\texttt{signal} semaphore riêng của người đó.
+
+\subsubsection*{Giới hạn năng lực (Capacity Limits)}
+
+Giới hạn vật lý của hệ thống là sức chứa tối đa \texttt{CAPACITY}. Bất
+biến cần giữ trong toàn bộ quá trình chạy là:
+
+\[
+    0 \leq \texttt{inside} \leq \texttt{CAPACITY}.
+\]
+
+Mỗi lần một người vào phòng, \texttt{inside} tăng thêm 1. Mỗi lần một
+người rời phòng, \texttt{inside} giảm đi 1. Không được cho thêm người vào
+nếu \texttt{inside == CAPACITY}.
+
+\subsubsection*{Quy tắc ưu tiên \& Công bằng (Fairness/Priority)}
+
+Phiên bản cơ bản bằng semaphore đếm chỉ đảm bảo không vượt quá sức chứa,
+nhưng không đảm bảo FIFO. Trong nhiều hệ thống, khi một semaphore được
+\texttt{signal}, tiến trình được đánh thức có thể không phải là tiến
+trình đã chờ lâu nhất.
+
+Để đảm bảo công bằng, lời giải dùng hàng đợi FIFO tường minh:
+
+\begin{itemize}
+    \item Người đến trước được xếp trước trong \texttt{waitQ}.
+    \item Khi có chỗ trống, hệ thống lấy người đầu hàng ra trước.
+    \item Người mới đến không được chen ngang nếu \texttt{waitQ} không rỗng.
+\end{itemize}
+
+Trong biến thể có nhiều nhóm người, chẳng hạn nhiều câu lạc bộ cùng muốn
+dùng một phòng, hệ thống cần thêm chính sách chuyển lượt giữa các nhóm để
+tránh một nhóm chiếm phòng mãi.
+
+% =========================================================
+
+\subsection{Phân tích thử thách \& Lỗi tiềm ẩn (Challenges \& Pitfalls)}
+
+\subsubsection*{Nguy cơ Race Condition}
+
+Một lỗi phổ biến là tự quản lý số người trong phòng bằng biến
+\texttt{inside} nhưng không bảo vệ bằng mutex. Giả sử phòng còn đúng một
+chỗ:
+
+\begin{lstlisting}
+// Trang thai ban dau: inside = CAPACITY - 1
+
+Person A doc inside < CAPACITY la dung;
+Person B cung doc inside < CAPACITY la dung;
+
+Person B tang inside len CAPACITY va vao phong;
+Person A tiep tuc tang inside len CAPACITY + 1;
+
+// Ket qua: phong vuot qua suc chua.
+if (inside < CAPACITY) {
+    inside = inside + 1;
+    enterRoom();
+}
+\end{lstlisting}
+
+Vết thực thi trên cho thấy thao tác ``kiểm tra còn chỗ'' và ``tăng
+\texttt{inside}'' không được tách rời nhau. Chúng phải nằm trong cùng một
+đoạn găng.
+
+\subsubsection*{Phân tích Bế tắc (Deadlock)}
+
+Một cách sửa sai thường gặp là thêm mutex quanh biến \texttt{inside},
+nhưng lại để tiến trình giữ mutex trong khi đang chờ điều kiện. Đây là
+lỗi có thể gây deadlock.
+
+\begin{lstlisting}
+// Giai phap sai: giu mutex trong khi dang cho dieu kien
+EnterWrong() {
+    wait(mutex);
+    // Khoa bien inside va waitQ.
+
+    while (inside == CAPACITY) {
+        wait(spaceAvailable);
+        // Sai: tien trinh ngu nhung van giu mutex.
+    }
+
+    inside = inside + 1;
+    signal(mutex);
+
+    enterRoom();
+}
+
+LeaveWrong() {
+    wait(mutex);
+    // Co the bi chan vinh vien neu mutex dang bi nguoi cho giu.
+
+    inside = inside - 1;
+    signal(spaceAvailable);
+
+    signal(mutex);
+}
+\end{lstlisting}
+
+Kịch bản deadlock:
+
+\begin{itemize}
+    \item Phòng đầy.
+    \item Một người mới đến gọi \texttt{EnterWrong()}, lấy được
+    \texttt{mutex}, thấy phòng đầy rồi ngủ trên \texttt{spaceAvailable}.
+    \item Người đó vẫn giữ \texttt{mutex} trong lúc ngủ.
+    \item Một người trong phòng muốn rời đi, gọi \texttt{LeaveWrong()},
+    nhưng không lấy được \texttt{mutex}.
+    \item Không ai có thể giảm \texttt{inside} hoặc phát tín hiệu
+    \texttt{spaceAvailable}. Hệ thống bị kẹt vô hạn.
+\end{itemize}
+
+\subsubsection*{Đói tài nguyên (Starvation) \& Livelock}
+
+Starvation có thể xảy ra trong hai tình huống chính.
+
+Thứ nhất, nếu chỉ dùng semaphore đếm không công bằng, khi
+\texttt{signal(roomSlots)} được gọi, hệ điều hành có thể đánh thức một
+tiến trình bất kỳ. Một người đã chờ lâu có thể liên tục bị người đến sau
+vượt mặt.
+
+Thứ hai, trong biến thể có nhiều nhóm người, nếu phòng đang thuộc nhóm A
+và hệ thống luôn cho người nhóm A mới đến vào tiếp, nhóm B có thể chờ
+mãi. Hệ thống vẫn hoạt động, vẫn có người ra vào, nhưng một nhóm không
+bao giờ đến lượt.
+
+\begin{lstlisting}
+// Starvation theo nhom khi cho nguoi cung nhom vao lien tuc
+if (currentGroup == A && inside < CAPACITY) {
+    inside = inside + 1;
+    enterRoom();
+}
+
+// Nhom B dang doi khong bao gio duoc chon neu A den lien tuc.
+\end{lstlisting}
+
+Đây không phải deadlock vì hệ thống vẫn chạy. Tuy nhiên, nó vi phạm tính
+công bằng vì một nhóm hoặc một tiến trình có thể không bao giờ được phục
+vụ.
+
+\subsubsection*{Đoạn mã lỗi minh họa}
+
+Đoạn code ngây thơ dưới đây trông có vẻ hợp lý vì đã kiểm tra
+\texttt{inside < CAPACITY}, nhưng thực chất gây race condition:
+
+\begin{lstlisting}
+// Naive Solution: sai vi check-and-enter khong nguyen tu
+int inside = 0;
+const int CAPACITY = 10;
+
+PersonNaive(int id) {
+    if (inside < CAPACITY) {
+        inside = inside + 1;
+        // Race condition: nhieu thread co the cung tang inside.
+
+        enterRoom(id);
+        useRoom(id);
+        leaveRoom(id);
+
+        inside = inside - 1;
+        // Race condition tiep tuc xay ra khi roi phong.
+    }
+}
+\end{lstlisting}
+
+Code này thất bại vì không có mutex bảo vệ \texttt{inside}. Khi nhiều
+người cùng chạy, họ có thể cùng nhìn thấy phòng còn chỗ và cùng tăng
+\texttt{inside}, khiến phòng vượt quá \texttt{CAPACITY}. Ngoài ra, thao
+tác giảm \texttt{inside} khi rời phòng cũng có thể bị ghi đè nếu nhiều
+người rời phòng đồng thời.
+
+% =========================================================
+
+\subsection{Giải pháp \& Mã giả chi tiết (Proposed Solution \& Pseudocode)}
+
+\subsubsection*{Chiến lược tiếp cận}
+
+Giải pháp đề xuất gồm hai mức:
+
+\begin{itemize}
+    \item \textbf{Mức cơ bản:} dùng semaphore đếm
+    \texttt{roomSlots = CAPACITY}. Mỗi người phải lấy được một token trước
+    khi vào phòng và trả token khi rời phòng.
+    \item \textbf{Mức công bằng:} dùng mutex, hàng đợi FIFO
+    \texttt{waitQ} và semaphore riêng \texttt{canEnter} cho từng người.
+    Bộ điều phối đặt chỗ trước cho người đầu hàng rồi mới đánh thức họ.
+\end{itemize}
+
+Phiên bản công bằng là lời giải chính vì nó vừa giữ được giới hạn sức
+chứa, vừa chống chen hàng và giảm nguy cơ starvation.
+
+\subsubsection*{Khởi tạo cấu trúc dữ liệu \& Biến đồng bộ}
+
+\paragraph{Biến trạng thái (State Variables).}
+
+\begin{lstlisting}
+#define CAPACITY 10
+
+typedef struct Participant {
+    int id;
+    semaphore canEnter;
+    // Semaphore rieng cua tung nguoi, dung de goi dung nguoi do vao.
+} Participant;
+
+int inside = 0;
+// So nguoi hien dang o trong phong.
+
+Queue waitQ;
+// Hang doi FIFO cua nhung nguoi dang cho ben ngoai.
+\end{lstlisting}
+
+\paragraph{Mutex / Lock.}
+
+\begin{lstlisting}
+semaphore mutex = 1;
+// Bao ve inside va waitQ.
+\end{lstlisting}
+
+\paragraph{Semaphore.}
+
+\begin{lstlisting}
+semaphore roomSlots = CAPACITY;
+// Loi giai co ban: dem so cho trong con lai.
+
+semaphore canEnter;
+// Moi Participant co mot canEnter rieng, khoi tao bang 0.
+\end{lstlisting}
+
+\subsubsection*{Mã giả mức cơ bản bằng semaphore đếm}
+
+Phiên bản này phù hợp khi chỉ cần đảm bảo phòng không vượt quá sức chứa,
+không yêu cầu FIFO nghiêm ngặt.
+
+\begin{lstlisting}
+ParticipantBasic(int id) {
+    wait(roomSlots);
+    // Cho den khi con it nhat mot cho trong phong.
+
+    enterRoom(id);
+    // Da giu duoc mot cho nen duoc vao phong.
+
+    useRoom(id);
+    // Non-critical section: su dung phong trong mot thoi gian bat ky.
+
+    leaveRoom(id);
+    // Roi khoi phong ve mat vat ly.
+
+    signal(roomSlots);
+    // Tra lai mot cho va danh thuc mot nguoi dang cho neu co.
+}
+\end{lstlisting}
+
+\subsubsection*{Mã giả mức công bằng bằng FIFO và private semaphore}
+
+\paragraph{Hàm đánh thức người tiếp theo.}
+
+\begin{lstlisting}
+WakeNextIfPossible() {
+    while (inside < CAPACITY && !waitQ.empty()) {
+        Participant *p = waitQ.dequeue();
+        // Lay nguoi dung dau hang FIFO.
+
+        inside = inside + 1;
+        // Dat cho truoc cho nguoi nay truoc khi danh thuc.
+
+        signal(p->canEnter);
+        // Danh thuc dung nguoi vua duoc dat cho.
+    }
+}
+\end{lstlisting}
+
+\paragraph{Luồng người tham gia.}
+
+\begin{lstlisting}
+ParticipantThread(int id) {
+    Participant self;
+
+    self.id = id;
+    self.canEnter = 0;
+    // Ban dau chua duoc phep vao phong.
+
+    wait(mutex);
+    // Khoa inside va waitQ de kiem tra dieu kien vao phong.
+
+    if (inside < CAPACITY && waitQ.empty()) {
+        inside = inside + 1;
+        // Con cho va khong ai dang doi, dat cho cho chinh minh.
+
+        signal(mutex);
+        // Mo khoa de cac thread khac co the tiep tuc kiem tra.
+    }
+    else {
+        waitQ.enqueue(&self);
+        // Phong day hoac da co nguoi doi, phai xep hang FIFO.
+
+        signal(mutex);
+        // Nha mutex truoc khi ngu, tranh deadlock.
+
+        wait(self.canEnter);
+        // Cho den khi bo dieu phoi dat cho va goi dung minh.
+    }
+
+    enterRoom(id);
+    // Chi vao phong sau khi da co cho duoc dat truoc.
+
+    useRoom(id);
+    // Non-critical section: doc sach/su dung phong.
+
+    leaveRoom(id);
+    // Roi phong ve mat vat ly.
+
+    wait(mutex);
+    // Khoa inside va waitQ de cap nhat trang thai roi phong.
+
+    inside = inside - 1;
+    // Tra lai mot cho trong phong.
+
+    WakeNextIfPossible();
+    // Neu co nguoi dang doi, dat cho va danh thuc nguoi dau hang.
+
+    signal(mutex);
+    // Mo khoa sau khi trang thai da nhat quan.
+}
+\end{lstlisting}
+
+Trong đoạn mã trên, điều kiện \texttt{waitQ.empty()} rất quan trọng. Nếu
+phòng còn chỗ nhưng đã có người đang chờ, người mới đến không được đi tắt
+vào phòng. Họ phải xếp sau hàng đợi. Quy tắc này ngăn hiện tượng
+\textit{barging}, tức là người đến sau chen lên trước người đã chờ lâu.
+
+\subsubsection*{Biến thể monitor}
+
+Cùng ý tưởng trên có thể được viết gọn hơn bằng monitor. Monitor gom
+biến \texttt{inside}, hàng đợi và các thủ tục \texttt{enter}/\texttt{leave}
+vào một vùng điều khiển duy nhất.
+
+\begin{lstlisting}
+monitor LimitedRoom {
+    int inside = 0;
+    condition notFull;
+
+    procedure enter(int id) {
+        while (inside == CAPACITY) {
+            notFull.wait();
+            // Cho den khi co nguoi roi phong lam xuat hien cho trong.
+        }
+
+        inside = inside + 1;
+        // Dat cho cho nguoi vua duoc phep vao.
+    }
+
+    procedure leave(int id) {
+        inside = inside - 1;
+        // Tra lai mot cho.
+
+        notFull.signal();
+        // Danh thuc mot nguoi dang cho dieu kien phong chua day.
+    }
+}
+\end{lstlisting}
+
+Monitor trên đảm bảo giới hạn sức chứa, nhưng chưa tự động đảm bảo FIFO
+nếu condition variable không có thứ tự công bằng. Muốn FIFO nghiêm ngặt,
+monitor cần được bổ sung hàng đợi riêng giống lời giải private semaphore.
+
+\subsubsection*{Biến thể điều phối theo nhóm}
+
+Trong nhiều tình huống, phòng không chỉ giới hạn số người mà còn có ràng
+buộc theo nhóm. Ví dụ, một phòng sinh hoạt chỉ cho phép một câu lạc bộ sử
+dụng tại một thời điểm. Khi đó, ngoài biến \texttt{inside}, ta cần thêm
+\texttt{currentGroup} để biết nhóm nào đang sở hữu phòng.
+
+\begin{lstlisting}
+// Y tuong chuyen giao theo lo giua cac nhom
+int currentGroup = NONE;
+int inside = 0;
+
+int waiting[G];
+Queue groupQ[G];
+
+semaphore groupSem[G];
+semaphore mutex = 1;
+
+LeaveGroupRoom(int myGroup) {
+    wait(mutex);
+    // Khoa inside, currentGroup va cac hang doi nhom.
+
+    inside = inside - 1;
+    // Mot nguoi cua nhom hien tai roi phong.
+
+    if (inside == 0) {
+        int next = chooseNextWaitingGroup();
+        // Chon nhom tiep theo theo chinh sach cong bang.
+
+        currentGroup = next;
+
+        int batch = min(waiting[next], CAPACITY);
+        // Chi cho toi da CAPACITY nguoi cua nhom tiep theo vao.
+
+        waiting[next] = waiting[next] - batch;
+        inside = inside + batch;
+        // Dat cho cho ca lo truoc khi danh thuc.
+
+        for (int i = 0; i < batch; i++) {
+            signal(groupSem[next]);
+            // Danh thuc tung nguoi cua nhom duoc chon.
+        }
+
+        if (next == NONE) {
+            currentGroup = NONE;
+            // Khong con nhom nao dang doi.
+        }
+    }
+
+    signal(mutex);
+    // Mo khoa sau khi da chuyen giao xong neu can.
+}
+\end{lstlisting}
+
+Cách gọi theo lô này giúp tránh việc nhóm hiện tại kéo dài quyền sử dụng
+mãi bằng cách liên tục đưa người mới vào, trong khi nhóm khác đang chờ.
+
+\subsubsection*{Kiểm chứng (Walkthrough/Dry-run)}
+
+Giả sử \texttt{CAPACITY = 2}. Ban đầu \texttt{inside = 0} và
+\texttt{waitQ} rỗng.
+
+Người thứ nhất đến, thấy phòng còn chỗ và không có ai đang chờ, nên tăng
+\texttt{inside} lên 1 rồi vào phòng. Người thứ hai đến sau đó cũng được
+vào, làm \texttt{inside = 2}. Lúc này phòng đã đầy.
+
+Nếu người thứ ba đến, tiến trình này không được vào ngay. Nó tạo
+semaphore riêng \texttt{canEnter}, đưa chính mình vào \texttt{waitQ}, rồi
+nhả \texttt{mutex} trước khi ngủ. Việc nhả \texttt{mutex} trước khi ngủ
+giúp tránh deadlock, vì người trong phòng vẫn có thể lấy mutex để rời
+phòng.
+
+Khi người thứ nhất rời phòng, \texttt{inside} giảm xuống 1. Sau đó
+\texttt{WakeNextIfPossible()} lấy người đầu hàng từ \texttt{waitQ}, tăng
+\texttt{inside} trở lại 2 để đặt chỗ trước, rồi mới
+\texttt{signal(canEnter)} cho đúng người đó. Nhờ đặt chỗ trước khi đánh
+thức, người thứ ba không phải tự tranh chấp với người mới đến.
+
+Giải pháp này khắc phục các lỗi ở Mục III như sau:
+
+\begin{itemize}
+    \item Không còn race condition vì mọi thao tác trên \texttt{inside}
+    và \texttt{waitQ} đều nằm dưới \texttt{mutex}.
+    \item Không deadlock vì tiến trình luôn nhả \texttt{mutex} trước khi
+    ngủ trên semaphore riêng.
+    \item Hạn chế starvation vì người chờ được phục vụ theo FIFO, người
+    mới đến không được chen ngang nếu hàng chờ chưa rỗng.
+\end{itemize}
+
+\newpage
+\section{Bài toán Bãi đỗ xe giới hạn (Parking Lot Problem)}
+% =========================================================
+% BAI TOAN BAI DO XE GIOI HAN -- PARKING LOT PROBLEM
+% FORMAT THEO TEMPLATE I--IV
+% =========================================================
+
+\subsection{Mô tả bài toán (Problem Description)}
+
+\subsubsection*{1. Cốt truyện \& Bối cảnh}
+
+Hãy tưởng tượng một bãi đỗ xe trong trung tâm thương mại vào giờ cao điểm.
+Bãi xe chỉ có hữu hạn \texttt{CAPACITY} vị trí đỗ. Nhiều xe có thể đến bãi
+ở các thời điểm độc lập: xe đi tới cổng vào, xin được cấp một chỗ đỗ, chạy
+vào bãi nếu còn chỗ, ở lại trong bãi một khoảng thời gian bất kỳ, sau đó
+rời bãi và trả lại chỗ cho xe khác.
+
+Trong mô hình đồng bộ hóa, mỗi xe được xem như một luồng hoặc tiến trình
+độc lập. Mỗi vị trí đỗ được xem như một đơn vị tài nguyên dùng chung. Bãi
+đỗ xe chỉ hoạt động đúng nếu tại mọi thời điểm số xe đang ở trong bãi không
+vượt quá số chỗ tối đa.
+
+Nếu bãi còn chỗ, xe đến được phép đi qua cổng vào. Nếu bãi đã đầy, xe đến
+sau phải dừng ở ngoài cổng hoặc vào hàng chờ. Khi một xe rời đi, đúng một
+chỗ đỗ được giải phóng và hệ thống phải đánh thức một xe đang chờ nếu hàng
+chờ không rỗng.
+
+Mục tiêu cuối cùng của hệ thống là bảo đảm:
+
+\begin{itemize}
+    \item Số xe trong bãi không bao giờ vượt quá \texttt{CAPACITY}.
+    \item Mỗi chỗ đỗ chỉ được cấp cho một xe tại một thời điểm.
+    \item Xe phải chờ khi bãi đầy.
+    \item Khi có xe rời bãi, chỗ trống được trả lại đúng cách.
+    \item Nếu có yêu cầu công bằng, xe đã chờ lâu không bị xe mới đến chen ngang mãi mãi.
+\end{itemize}
+
+\subsubsection*{2. Các thực thể tham gia (Entities/Threads)}
+
+\paragraph{Xe (Car).}
+Mỗi xe là một luồng độc lập. Xe không biết trước bãi còn chỗ hay không, mà
+phải đi qua cơ chế đồng bộ để xin một đơn vị tài nguyên.
+
+Chu trình trạng thái của một xe là:
+
+\begin{center}
+\texttt{Đến bãi $\rightarrow$ Xin vào $\rightarrow$ Chờ nếu đầy
+$\rightarrow$ Đỗ xe $\rightarrow$ Rời bãi $\rightarrow$ Trả chỗ}
+\end{center}
+
+Vai trò của xe là tạo ra yêu cầu sử dụng tài nguyên và trả lại tài nguyên
+sau khi sử dụng xong.
+
+\paragraph{Bãi đỗ xe (Parking Lot).}
+Bãi đỗ xe là tài nguyên dùng chung có sức chứa giới hạn. Trạng thái trung
+tâm của bãi gồm số xe đang đỗ bên trong, số chỗ còn trống và bản đồ trạng
+thái của từng vị trí đỗ.
+
+Bất biến quan trọng nhất của bãi là:
+\[
+    0 \leq \texttt{occupied} \leq \texttt{CAPACITY}.
+\]
+
+\paragraph{Bộ điều phối cổng (Gate Coordinator).}
+Bộ điều phối cổng là phần logic quyết định xe nào được vào, xe nào phải
+chờ và khi nào xe đang chờ được đánh thức. Nếu hệ thống có nhiều cổng vào
+hoặc nhiều nhân viên điều phối, phần này càng phải được bảo vệ chặt chẽ
+để tránh cấp phát trùng một chỗ đỗ.
+
+\paragraph{Hàng chờ xe (Waiting Queue).}
+Trong biến thể công bằng, các xe bị chặn vì bãi đầy được đưa vào hàng chờ
+FIFO. Khi có xe rời bãi, xe đứng đầu hàng chờ được gọi vào trước.
+
+\subsubsection*{3. Tài nguyên dùng chung (Shared Resources)}
+
+Các tài nguyên và trạng thái dùng chung gồm:
+
+\begin{itemize}
+    \item \texttt{occupied}: số xe hiện đang ở trong bãi.
+    \item \texttt{freeSlots}: số chỗ trống còn lại.
+    \item \texttt{CAPACITY}: sức chứa tối đa của bãi đỗ.
+    \item \texttt{slot[]}: mảng trạng thái của từng vị trí đỗ; mỗi ô có thể trống hoặc đang thuộc về một xe.
+    \item \texttt{waitQ}: hàng đợi các xe đang chờ ngoài cổng.
+    \item \texttt{spots}: semaphore đếm biểu diễn số chỗ trống còn lại.
+    \item \texttt{stateMutex}: mutex bảo vệ \texttt{occupied}, \texttt{slot[]} và các biến trạng thái phụ trợ.
+\end{itemize}
+
+Semaphore đếm chỉ trả lời câu hỏi ``còn bao nhiêu chỗ trống''. Nó không tự
+bảo vệ được các cấu trúc phụ như \texttt{slot[]} hoặc \texttt{waitQ}. Do đó,
+nếu hệ thống cần quản lý trạng thái chi tiết của từng vị trí đỗ, ta vẫn
+phải dùng mutex hoặc monitor.
+
+\subsubsection*{4. Nhắc nhở (Visual Aid)}
+
+\begin{figure}[H]
+\centering
+\fbox{
+\begin{minipage}{0.86\textwidth}
+\centering
+\vspace{0.45cm}
+
+\textbf{Xe đến}
+$\quad \longrightarrow \quad$
+\textbf{Cổng vào}
+$\quad \longrightarrow \quad$
+\textbf{Kiểm tra chỗ trống}
+
+\vspace{0.55cm}
+
+\textbf{Còn chỗ}
+$\quad \longrightarrow \quad$
+\textbf{Cấp vị trí đỗ}
+$\quad \longrightarrow \quad$
+\textbf{Xe vào bãi}
+
+\vspace{0.55cm}
+
+\textbf{Bãi đầy}
+$\quad \longrightarrow \quad$
+\textbf{Hàng chờ FIFO}
+$\quad \longrightarrow \quad$
+\textbf{Được gọi khi có xe rời bãi}
+
+\vspace{0.55cm}
+
+\textit{Mỗi xe vào bãi phải chiếm đúng một chỗ trống và trả lại chỗ khi rời đi.}
+
+\vspace{0.45cm}
+\end{minipage}
+}
+\caption{Mô hình đồng bộ trong bài toán bãi đỗ xe có giới hạn sức chứa}
+\label{fig:parking-lot-template-model}
+\end{figure}
+
+% =========================================================
+
+\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+
+\subsubsection*{1. Loại trừ tương hỗ (Mutual Exclusion)}
+
+Đoạn găng của bài toán nằm ở mọi thao tác đọc/ghi các biến trạng thái của
+bãi đỗ xe, đặc biệt là:
+
+\begin{itemize}
+    \item Kiểm tra và cập nhật \texttt{occupied}.
+    \item Tìm một vị trí trống trong \texttt{slot[]}.
+    \item Ghi nhận \texttt{slot[pos] = carId} khi xe vào.
+    \item Xóa \texttt{slot[pos] = -1} khi xe rời đi.
+    \item Thêm hoặc lấy xe ra khỏi hàng chờ \texttt{waitQ}.
+\end{itemize}
+
+Không được có hai luồng cùng thao tác lên các dữ liệu này cùng lúc. Ví dụ,
+nếu hai xe cùng chạy \texttt{findEmptySlot(slot)} mà không có mutex, cả hai
+có thể cùng chọn một vị trí đỗ.
+
+\subsubsection*{2. Đồng bộ điều kiện (Condition Synchronization)}
+
+Quan hệ chờ -- đánh thức trong bài toán như sau:
+
+\begin{itemize}
+    \item Xe phải chờ nếu bãi đã đầy, tức semaphore \texttt{spots} bằng 0 hoặc \texttt{freeSlots = 0}.
+    \item Xe được đánh thức khi một xe khác rời bãi và trả lại một chỗ trống.
+    \item Nếu dùng hàng chờ FIFO, xe không chỉ chờ có chỗ trống mà còn chờ đến lượt của mình trong \texttt{waitQ}.
+\end{itemize}
+
+Trong lời giải semaphore cơ bản, quan hệ này được biểu diễn bằng:
+
+\begin{center}
+\texttt{wait(spots)}: xe chờ lấy một chỗ trống
+\qquad
+\texttt{signal(spots)}: xe rời bãi trả lại một chỗ
+\end{center}
+
+\subsubsection*{3. Giới hạn năng lực (Capacity Limits)}
+
+Bãi đỗ xe có giới hạn vật lý là \texttt{CAPACITY}. Tại mọi thời điểm phải
+luôn có:
+\[
+    \texttt{occupied} \leq \texttt{CAPACITY}.
+\]
+
+Nếu \texttt{occupied = CAPACITY}, mọi xe đến sau phải bị chặn ngoài cổng
+hoặc đưa vào hàng chờ. Không được cho xe vào chỉ vì xe đọc được trạng thái
+cũ trước khi một xe khác cập nhật biến đếm.
+
+\subsubsection*{4. Quy tắc ưu tiên \& Công bằng (Fairness/Priority)}
+
+Với bài toán cơ bản, chỉ cần bảo đảm không vượt quá sức chứa. Tuy nhiên,
+trong hệ thống thực tế, ta thường muốn xe chờ được phục vụ công bằng. Nếu
+không có chính sách rõ ràng, một xe đã chờ lâu có thể bị xe mới đến chen
+ngang liên tục.
+
+Một chính sách hợp lý là FIFO: xe nào đến trước và phải chờ trước thì được
+đánh thức trước. Nếu có nhóm xe ưu tiên, ví dụ xe VIP hoặc xe khẩn cấp, hệ
+thống nên giới hạn số lượt ưu tiên liên tiếp để tránh làm xe thường bị đói
+vô hạn.
+
+% =========================================================
+
+\subsection{Phân tích thử thách \& Lỗi tiềm ẩn (Challenges \& Pitfalls)}
+
+\subsubsection*{1. Nguy cơ Race Condition}
+
+Một lỗi phổ biến là tự quản lý biến \texttt{freeSlots} mà không bảo vệ bằng
+mutex. Giả sử ban đầu bãi chỉ còn đúng một chỗ trống:
+
+\begin{lstlisting}
+// Trang thai ban dau: freeSlots = 1
+
+Car A doc freeSlots > 0 la dung;
+Car B cung doc freeSlots > 0 la dung;
+
+Car B giam freeSlots xuong 0 va duoc vao;
+Car A tiep tuc giam freeSlots xuong -1 va cung duoc vao;
+
+// Ket qua: bai xe vuot suc chua mot xe.
+\end{lstlisting}
+
+Race condition xảy ra vì thao tác kiểm tra \texttt{freeSlots > 0} và thao
+tác giảm \texttt{freeSlots} không phải là một thao tác nguyên tử. Hai xe
+cùng nhìn thấy trạng thái cũ và cùng tin rằng mình được vào.
+
+Một lỗi tương tự xảy ra với mảng \texttt{slot[]}:
+
+\begin{lstlisting}
+wait(spots);              // Lay duoc mot token cho trong.
+
+int pos = findFirstEmptySlot(slot);
+// Sai: khong co mutex bao ve slot[].
+
+slot[pos] = myCarId;
+// Hai xe co the cung ghi vao mot vi tri pos.
+
+enterParkingLot();
+parkAt(pos);
+\end{lstlisting}
+
+Semaphore \texttt{spots} đảm bảo số lượng xe không vượt quá giới hạn,
+nhưng không đảm bảo thao tác chọn vị trí cụ thể trong \texttt{slot[]} là
+an toàn. Vì vậy, việc tìm và ghi vị trí đỗ phải nằm trong đoạn găng.
+
+\subsubsection*{2. Phân tích Bế tắc (Deadlock)}
+
+Bài toán bãi đỗ xe cơ bản thường không gây deadlock nếu xe chỉ lấy một
+tài nguyên duy nhất là \texttt{spots}, rồi trả lại nó khi rời bãi. Tuy
+nhiên, deadlock có thể xuất hiện nếu thiết kế dùng nhiều khóa và lấy khóa
+sai thứ tự.
+
+Ví dụ, giả sử hệ thống có hai khóa:
+
+\begin{itemize}
+    \item \texttt{gateMutex}: bảo vệ trạng thái cổng.
+    \item \texttt{slotMutex}: bảo vệ bản đồ vị trí đỗ.
+\end{itemize}
+
+Nếu xe vào giữ \texttt{gateMutex} rồi chờ \texttt{slotMutex}, còn xe ra giữ
+\texttt{slotMutex} rồi chờ \texttt{gateMutex}, ta có vòng chờ:
+
+\begin{center}
+\texttt{Xe vào giữ gateMutex $\rightarrow$ chờ slotMutex}
+
+\texttt{Xe ra giữ slotMutex $\rightarrow$ chờ gateMutex}
+\end{center}
+
+Đây là circular wait. Cách tránh là dùng một mutex chung cho trạng thái bãi
+hoặc quy định mọi luồng luôn lấy khóa theo cùng một thứ tự.
+
+\subsubsection*{3. Đói tài nguyên (Starvation) \& Livelock}
+
+Starvation có thể xảy ra nếu semaphore hoặc cơ chế đánh thức không công
+bằng. Một xe đã chờ lâu có thể không bao giờ được đánh thức nếu các xe mới
+đến liên tục được phục vụ trước.
+
+Trong biến thể có xe ưu tiên, starvation càng dễ xảy ra. Nếu hệ thống luôn
+cho xe VIP vào trước, một dòng xe VIP liên tục có thể khiến xe thường đứng
+đầu hàng không bao giờ được vào. Hệ thống vẫn hoạt động, xe vẫn ra vào,
+nhưng một nhóm luồng bị bỏ đói.
+
+\subsubsection*{4. Đoạn mã lỗi minh họa}
+
+Đoạn code sau là một lời giải ngây thơ. Nó có vẻ đúng vì kiểm tra còn chỗ
+trước khi cho xe vào, nhưng thực chất gây race condition:
+
+\begin{lstlisting}
+// Giai phap sai: check-and-update khong duoc bao ve
+int freeSlots = CAPACITY;
+
+CarNaive(int carId) {
+    if (freeSlots > 0) {
+        // Sai: nhieu xe co the cung thay freeSlots > 0.
+
+        freeSlots = freeSlots - 1;
+        // Sai: thao tac giam khong nguyen tu.
+
+        enterParkingLot(carId);
+        park(carId);
+
+        leaveParkingLot(carId);
+
+        freeSlots = freeSlots + 1;
+        // Sai: tra tai nguyen cung khong duoc bao ve.
+    }
+    else {
+        waitOutside(carId);
+    }
+}
+\end{lstlisting}
+
+Code này thất bại vì hai xe có thể cùng đọc \texttt{freeSlots = 1}, cùng
+đi vào nhánh \texttt{if}, rồi cùng giảm biến đếm. Kết quả là bãi xe có thể
+vượt sức chứa. Ngoài ra, xe bị từ chối chỉ gọi \texttt{waitOutside} nhưng
+không có cơ chế \texttt{signal} rõ ràng để đánh thức khi có xe rời bãi.
+
+Một lỗi khác là quên trả lại tài nguyên:
+
+\begin{lstlisting}
+// Giai phap sai: quen signal khi roi bai
+CarWrong() {
+    wait(spots);           // Lay mot cho trong bai.
+
+    enterParkingLot();
+    park();
+    leaveParkingLot();
+
+    // Thieu signal(spots).
+    // Mot don vi tai nguyen bi mat vinh vien.
+}
+\end{lstlisting}
+
+Sau nhiều lần quên \texttt{signal(spots)}, hệ thống có thể rơi vào trạng
+thái khóa giả: trong bãi thực tế có chỗ, nhưng semaphore báo hết chỗ nên
+xe bên ngoài chờ mãi.
+
+% =========================================================
+
+\subsection{Giải pháp \& Mã giả chi tiết (Proposed Solution \& Pseudocode)}
+
+\subsubsection*{1. Chiến lược tiếp cận}
+
+Giải pháp đề xuất dùng hai lớp đồng bộ:
+
+\begin{itemize}
+    \item Semaphore đếm \texttt{spots} để quản lý số lượng chỗ trống.
+    \item Mutex \texttt{stateMutex} để bảo vệ trạng thái chi tiết như \texttt{occupied} và \texttt{slot[]}.
+\end{itemize}
+
+Luồng xe chỉ được vào bãi sau khi gọi thành công \texttt{wait(spots)}. Sau
+đó xe đi vào đoạn găng để chọn một vị trí đỗ cụ thể và cập nhật biến trạng
+thái. Khi rời bãi, xe lại vào đoạn găng để xóa vị trí của mình, giảm
+\texttt{occupied}, rồi gọi \texttt{signal(spots)} để đánh thức một xe đang
+chờ.
+
+Nếu đề bài yêu cầu công bằng mạnh hơn, ta dùng monitor với hàng chờ FIFO:
+xe nào phải chờ trước thì được đánh thức trước.
+
+\subsubsection*{2. Khởi tạo cấu trúc dữ liệu \& Biến đồng bộ}
+
+\begin{lstlisting}
+#define CAPACITY 100
+
+semaphore spots = CAPACITY;
+// Dem so cho trong con lai. Xe wait(spots) truoc khi vao bai.
+
+semaphore stateMutex = 1;
+// Mutex bao ve occupied va slot[].
+
+int occupied = 0;
+// So xe dang o trong bai.
+
+int slot[CAPACITY];
+// slot[i] = -1 neu vi tri i con trong.
+// slot[i] = carId neu vi tri i dang duoc xe carId su dung.
+\end{lstlisting}
+
+Trước khi hệ thống bắt đầu, ta khởi tạo toàn bộ \texttt{slot[i] = -1} để
+biểu diễn mọi vị trí đều đang trống.
+
+\subsubsection*{3. Mã giả cho từng thực thể (Pseudocode)}
+
+\paragraph{Hàm phụ trợ tìm chỗ trống.}
+
+\begin{lstlisting}
+int findEmptySlot(int slot[]) {
+    for (int i = 0; i < CAPACITY; i++) {
+        if (slot[i] == -1) {
+            return i;
+        }
+    }
+    return -1;
+}
+\end{lstlisting}
+
+\paragraph{Luồng xe với semaphore đếm và mutex.}
+
+\begin{lstlisting}
+CarThread(int carId) {
+    int mySlot;
+
+    // 1. Chuan bi: xe di den bai, chua cham vao du lieu dung chung.
+    arriveAtParkingLot(carId);
+
+    // 2. Xin cap phep vao bai.
+    wait(spots);
+    // Cho den khi co it nhat mot cho trong trong bai.
+    // Neu bai day, xe bi block tai day.
+
+    wait(stateMutex);
+    // Khoa trang thai bai de chon cho va cap nhat occupied an toan.
+
+    mySlot = findEmptySlot(slot);
+    slot[mySlot] = carId;
+    occupied = occupied + 1;
+
+    signal(stateMutex);
+    // Mo khoa cho cac xe khac co the cap nhat trang thai bai.
+
+    // 3. Thuc hien cong viec: xe vao bai va do tai vi tri da duoc cap.
+    enterParkingLot(carId);
+    parkAt(carId, mySlot);
+
+    useParkingSpace(carId);
+    // Xe o lai trong bai mot khoang thoi gian bat ky.
+
+    // 4. Tra tai nguyen va danh thuc xe khac.
+    wait(stateMutex);
+    // Khoa trang thai bai de xoa vi tri do mot cach an toan.
+
+    slot[mySlot] = -1;
+    occupied = occupied - 1;
+
+    signal(stateMutex);
+    // Mo khoa sau khi da cap nhat xong ban do vi tri do.
+
+    leaveParkingLot(carId);
+
+    signal(spots);
+    // Tra lai mot cho trong va danh thuc mot xe dang cho neu co.
+}
+\end{lstlisting}
+
+Trong lời giải này, \texttt{wait(spots)} xử lý điều kiện ``bãi còn chỗ hay
+không'', còn \texttt{stateMutex} xử lý việc cập nhật dữ liệu dùng chung
+một cách nguyên tử.
+
+\subsubsection*{4. Biến thể công bằng bằng monitor FIFO}
+
+Nếu đề bài yêu cầu xe chờ được phục vụ đúng thứ tự, semaphore đếm tiêu
+chuẩn có thể chưa đủ. Khi đó, ta dùng monitor với hàng đợi FIFO tường minh.
+Mỗi xe có một semaphore riêng. Khi bãi đầy, xe tự đưa mình vào cuối hàng
+\texttt{waitQ} và ngủ trên semaphore riêng đó.
+
+\begin{lstlisting}
+monitor ParkingLot {
+    int freeSlots = CAPACITY;
+    int occupied = 0;
+
+    Queue waitQ;
+    // Hang doi FIFO cac xe dang cho.
+
+    procedure enter(CarRequest self) {
+        if (freeSlots > 0 && waitQ.isEmpty()) {
+            freeSlots = freeSlots - 1;
+            occupied = occupied + 1;
+
+            self.granted = true;
+            return;
+        }
+
+        waitQ.enqueue(self);
+        // Xe phai cho vi bai day hoac vi co xe khac den truoc.
+
+        self.granted = false;
+
+        while (!self.granted) {
+            self.sem.wait();
+            // Cho den khi monitor danh thuc dung xe nay.
+        }
+    }
+
+    procedure leave() {
+        occupied = occupied - 1;
+        // Xe hien tai roi bai, giai phong mot cho.
+
+        if (!waitQ.isEmpty()) {
+            CarRequest next = waitQ.dequeue();
+            // Chon xe dung dau hang FIFO.
+
+            occupied = occupied + 1;
+            // Dat truoc cho trong cho xe duoc goi vao.
+
+            next.granted = true;
+
+            next.sem.signal();
+            // Danh thuc dung xe dang dung dau hang cho.
+        }
+        else {
+            freeSlots = freeSlots + 1;
+            // Khong co xe cho, tra cho ve bo dem freeSlots.
+        }
+    }
+}
+\end{lstlisting}
+
+\paragraph{Luồng xe dùng monitor FIFO.}
+
+\begin{lstlisting}
+CarThreadWithMonitor(int carId) {
+    CarRequest self;
+
+    self.id = carId;
+    self.sem = 0;
+    self.granted = false;
+
+    arriveAtParkingLot(carId);
+
+    ParkingLot.enter(self);
+    // Cho den khi xe duoc cap mot cho trong theo thu tu FIFO.
+
+    enterParkingLot(carId);
+    park(carId);
+
+    useParkingSpace(carId);
+
+    ParkingLot.leave();
+    // Tra cho va danh thuc xe dau hang neu co.
+
+    leaveParkingLot(carId);
+}
+\end{lstlisting}
+
+Điểm quan trọng của monitor là khi có xe đang chờ, chỗ trống không được
+trả về \texttt{freeSlots} cho mọi xe cùng tranh. Thay vào đó, chỗ đó được
+đặt trước cho xe đứng đầu hàng. Nhờ vậy, xe mới đến không thể chen ngang
+xe đã chờ lâu.
+
+\subsubsection*{5. Kiểm chứng (Walkthrough/Dry-run)}
+
+Giả sử \texttt{CAPACITY = 2}. Ban đầu \texttt{occupied = 0} và
+\texttt{spots = 2}. Xe thứ nhất gọi \texttt{wait(spots)} thành công, vào
+đoạn găng, lấy một vị trí trống trong \texttt{slot[]}, tăng
+\texttt{occupied} lên 1 rồi đi vào bãi. Xe thứ hai làm tương tự, làm
+\texttt{occupied = 2} và \texttt{spots = 0}.
+
+Khi xe thứ ba đến, nó bị chặn tại \texttt{wait(spots)} vì bãi đã đầy. Khi
+xe thứ nhất rời bãi, nó xóa vị trí của mình trong \texttt{slot[]}, giảm
+\texttt{occupied} xuống 1, rồi gọi \texttt{signal(spots)}. Xe thứ ba khi
+được đánh thức mới có thể vào đoạn găng để chọn đúng vị trí trống.
+
+Giải pháp tránh race condition vì mọi thao tác với \texttt{occupied} và
+\texttt{slot[]} đều nằm dưới \texttt{stateMutex}. Giải pháp tránh deadlock
+vì xe không giữ \texttt{stateMutex} khi đang chờ \texttt{spots}; thứ tự lấy
+và trả tài nguyên rõ ràng. Với phiên bản monitor FIFO, starvation được hạn
+chế vì xe chờ trước được đánh thức trước, xe mới đến không thể vượt hàng.
+
+\section{Bài toán Tiệc ăn Sushi (Sushi Bar Problem)}
 
 Bài toán mô phỏng một quán sushi có số ghế giới hạn. Khách chỉ được ngồi khi còn ghế, và những khách đến sau phải chờ nếu quán đầy. Một số biến thể yêu cầu xử lý theo nhóm hoặc theo lượt để tránh chen ngang.
 
@@ -56,9 +1204,7 @@ Các ý chính cần triển khai:
     \item Bổ sung chính sách công bằng nếu cần tránh starvation.
 \end{itemize}
 
-\section{Bài toán Bữa ăn tập thể (Dining Savages Problem) -- Tuấn}
-
-\textbf{Người phụ trách:} Tuấn.
+\section{Bài toán Bữa ăn tập thể (Dining Savages Problem)}
 
 Bài toán Dining Savages mô tả một nồi thức ăn chung có số phần hữu hạn. Các savage lấy phần ăn từ nồi; nếu nồi hết, một người phải đánh thức đầu bếp để nấu thêm.
 

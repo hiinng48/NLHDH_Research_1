@@ -1,8 +1,6 @@
 \chapter{Nhóm bài toán ghép nhóm và phối hợp điều kiện}
 
-\section{Bài toán Qua sông (River Crossing Problem / Hackers and Serfs) -- Chính}
-
-\textbf{Người phụ trách:} Chính.
+\section{Bài toán Qua sông (River Crossing Problem / Hackers and Serfs)}
 
 Bài toán yêu cầu ghép một nhóm người lên thuyền theo các tổ hợp hợp lệ. Ví dụ biến thể Hackers and Serfs thường yêu cầu mỗi thuyền có bốn người, nhưng không được tạo ra tổ hợp gây mất cân bằng không hợp lệ.
 
@@ -137,9 +135,7 @@ Trong mỗi nhóm 4 người, chọn 1 tiến trình đóng vai trò \textit{cap
     \item \textbf{Starvation:} nếu dòng người đến thiên lệch (toàn hacker hoặc toàn serf) có thể làm nhóm còn lại chờ rất lâu; có thể bổ sung chính sách chọn nhóm ưu tiên 2H2S khi khả dụng để giảm lệch.
 \end{itemize}
 
-\section{Bài toán Những người hút thuốc (Cigarette Smokers Problem) -- Chính}
-
-\textbf{Người phụ trách:} Chính.
+\section{Bài toán Những người hút thuốc (Cigarette Smokers Problem)}
 
 Bài toán gồm một tác nhân đặt hai trong ba nguyên liệu lên bàn, và người hút thuốc có nguyên liệu còn lại sẽ được hút. Mục tiêu là đánh thức đúng tiến trình phù hợp với cặp nguyên liệu hiện có.
 
@@ -265,23 +261,499 @@ Lời giải tiêu chuẩn dùng mô hình \textit{pushers}:
     \item \textbf{Starvation do agent:} nếu agent chọn cặp nguyên liệu lệch (ví dụ liên tục thiếu M), smoker tương ứng sẽ chờ lâu; đây là đặc tính của nguồn vào, không phải lỗi đồng bộ.
 \end{itemize}
 
-\section{Bài toán Ông già Noel (Santa Claus Problem) -- Phương}
+\newpage
+\section{Bài toán Ông già Noel (Santa Claus Problem)}
+% =========================================================
+% BAI TOAN ONG GIA NOEL -- SANTA CLAUS PROBLEM
+% Nguon giai thuat:
+% Allen B. Downey, The Little Book of Semaphores, 2nd ed.,
+% Section 5.5: The Santa Claus Problem, pp. 139--142.
+% =========================================================
 
-\textbf{Người phụ trách:} Phương.
+\subsection{Mô tả bài toán (Problem Description)}
 
-Bài toán Santa Claus mô phỏng Santa ngủ cho đến khi đủ điều kiện được đánh thức: hoặc tất cả tuần lộc đã trở về, hoặc có một nhóm elf cần được giúp. Bài toán có nhiều điều kiện ưu tiên và ghép nhóm.
+\subsubsection{Cốt truyện và bối cảnh}
 
-Các ý chính cần triển khai:
+Bài toán Ông già Noel (\textit{Santa Claus Problem}) là một bài toán
+đồng bộ tiến trình kinh điển. Trong bài toán, Santa Claus đang ngủ tại
+Bắc Cực và chỉ được đánh thức khi xảy ra một trong hai tình huống:
+
 \begin{itemize}
-    \item Xác định ba loại tiến trình: Santa, reindeer và elf.
-    \item Mô tả điều kiện đánh thức Santa.
-    \item Phân tích ưu tiên giữa nhóm reindeer và nhóm elf.
-    \item Dùng semaphore hoặc monitor để ghép đúng nhóm elf.
+\item Cả 9 con tuần lộc đã quay về sau kỳ nghỉ và sẵn sàng kéo xe
+trượt tuyết đi phát quà.
+\item Có một nhóm gồm đúng 3 chú lùn cùng gặp khó khăn trong quá
+trình làm đồ chơi và cần Santa trợ giúp.
 \end{itemize}
 
-\section{Bài toán Trông trẻ (Child Care Problem) -- Chính}
+Nếu Santa thức dậy và nhận thấy đồng thời có đủ 9 tuần lộc đang chờ
+cùng với một nhóm 3 chú lùn cần giúp đỡ, Santa phải ưu tiên chuẩn bị xe
+trượt tuyết cho tuần lộc trước, vì việc phát quà quan trọng hơn \cite[Sec.~5.5, p.~137]{downey2016}.
 
-\textbf{Người phụ trách:} Chính.
+Mục tiêu của hệ thống là bảo đảm Santa chỉ được đánh thức khi đủ điều
+kiện, các tuần lộc được xử lý theo nhóm 9 con, các chú lùn được xử lý
+theo nhóm 3 người, và không có nhóm chú lùn mới chen vào trước khi nhóm
+hiện tại đã thực hiện việc nhận trợ giúp.
+
+\subsubsection{Các thực thể tham gia (Entities/Threads)}
+
+\paragraph{Santa Claus.} Santa là tiến trình trung tâm. Santa ngủ khi chưa có yêu cầu hợp lệ.
+Khi được đánh thức, Santa kiểm tra xem có đủ tuần lộc hay không trước;
+nếu không, Santa kiểm tra nhóm chú lùn.
+
+\begin{center}
+\texttt{Ngủ $\rightarrow$ Được đánh thức $\rightarrow$ Kiểm tra điều kiện
+$\rightarrow$ Xử lý công việc $\rightarrow$ Ngủ lại}
+\end{center}
+
+\paragraph{Tuần lộc (Reindeer).}
+Có 9 tiến trình tuần lộc. Mỗi tuần lộc quay về Bắc Cực, cập nhật số
+tuần lộc đang chờ và sau đó chờ Santa chuẩn bị xe. Tuần lộc thứ 9 là
+tiến trình đánh thức Santa.
+
+\begin{center}
+\texttt{Đi nghỉ $\rightarrow$ Quay về $\rightarrow$ Chờ đủ nhóm 9 con
+$\rightarrow$ Được mắc vào xe}
+\end{center}
+
+\paragraph{Chú lùn (Elves).}
+Có nhiều tiến trình chú lùn. Khi một chú lùn gặp khó khăn, chú lùn đó
+xin tham gia vào nhóm hiện tại. Chỉ một nhóm gồm đúng 3 chú lùn được
+hình thành tại một thời điểm.
+
+\begin{center}
+\texttt{Làm đồ chơi $\rightarrow$ Gặp khó khăn $\rightarrow$ Gia nhập nhóm
+3 người $\rightarrow$ Nhận trợ giúp $\rightarrow$ Làm việc tiếp}
+\end{center}
+
+\subsubsection{Tài nguyên dùng chung (Shared Resources)}
+
+Các tài nguyên dùng chung trong bài toán gồm:
+
+\begin{itemize}
+\item Biến \texttt{reindeer}: số tuần lộc đã quay về và đang chờ.
+\item Biến \texttt{elves}: số chú lùn đang thuộc nhóm xin trợ giúp
+hiện tại.
+\item Santa, vì tại một thời điểm Santa chỉ có thể xử lý một loại
+yêu cầu.
+\item Tín hiệu đánh thức Santa.
+\item Quyền gia nhập nhóm chú lùn hiện tại.
+\item Tín hiệu cho phép tuần lộc tiếp tục sau khi Santa chuẩn bị xe.
+\end{itemize}
+
+Hai biến \texttt{reindeer} và \texttt{elves} phải được bảo vệ, vì nhiều
+tiến trình có thể cùng muốn cập nhật chúng.
+
+\subsubsection{Sơ đồ minh họa đề xuất (Visual Aid)}
+
+\begin{figure}[H]
+\centering
+\fbox{
+\begin{minipage}{0.83\textwidth}
+\centering
+\vspace{0.45cm}
+        \textbf{9 Tuần lộc}
+        $\quad \longrightarrow \quad$
+        \textbf{Santa Claus}
+        $\quad \longrightarrow \quad$
+        \textbf{Chuẩn bị xe trượt tuyết}
+
+        \vspace{0.6cm}
+
+        \textbf{3 Chú lùn}
+        $\quad \longrightarrow \quad$
+        \textbf{Santa Claus}
+        $\quad \longrightarrow \quad$
+        \textbf{Trợ giúp làm đồ chơi}
+
+        \vspace{0.6cm}
+
+        \textit{Nếu cả hai nhóm cùng sẵn sàng, Santa ưu tiên tuần lộc.}
+
+        \vspace{0.45cm}
+    \end{minipage}
+}
+\caption{Mô hình các thực thể trong bài toán Santa Claus}
+\label{fig:santa-model}
+
+\end{figure}
+
+% =========================================================
+
+\subsection{Ràng buộc đồng bộ (Synchronization Constraints)}
+
+\subsubsection{Loại trừ tương hỗ (Mutual Exclusion)}
+
+Đoạn găng (\textit{critical section}) của bài toán nằm ở các thao tác
+đọc và cập nhật hai biến đếm dùng chung:
+
+\begin{lstlisting}
+reindeer = reindeer + 1;
+reindeer = reindeer - 9;
+
+elves = elves + 1;
+elves = elves - 1;
+\end{lstlisting}
+
+Các thao tác này không được thực hiện đồng thời mà không có khóa bảo vệ.
+Ví dụ, nếu hai chú lùn cùng đọc và tăng biến \texttt{elves}, hệ thống
+có thể ghi nhận sai số chú lùn đang chờ. Tương tự, nếu nhiều tuần lộc
+cùng cập nhật \texttt{reindeer}, Santa có thể không được đánh thức đúng
+thời điểm.
+
+Vì vậy, giải pháp sử dụng semaphore \texttt{mutex} như một khóa loại
+trừ tương hỗ để bảo vệ hai biến trạng thái.
+
+\subsubsection{Đồng bộ điều kiện (Condition Synchronization)}
+
+\paragraph{Quan hệ chờ -- đánh thức của Santa.}
+
+\begin{itemize}
+\item Santa chờ trên semaphore \texttt{santaSem} khi chưa có yêu cầu
+hợp lệ.
+\item Tuần lộc thứ 9 gọi \texttt{signal(santaSem)} để đánh thức Santa.
+\item Chú lùn thứ 3 trong nhóm gọi \texttt{signal(santaSem)} để đánh
+thức Santa.
+\end{itemize}
+
+\paragraph{Quan hệ chờ -- đánh thức của tuần lộc.}
+
+\begin{itemize}
+\item Sau khi quay về, mỗi tuần lộc chờ trên
+\texttt{reindeerSem}.
+\item Khi có đủ 9 tuần lộc, Santa thực hiện
+\texttt{prepareSleigh()} rồi phát 9 tín hiệu trên
+\texttt{reindeerSem}.
+\item Sau khi được giải phóng, từng tuần lộc thực hiện
+\texttt{getHitched()}.
+\end{itemize}
+
+\paragraph{Quan hệ điều phối của chú lùn.}
+
+\begin{itemize}
+\item Semaphore \texttt{elfTex} đóng vai trò như cửa vào của nhóm
+chú lùn hiện tại.
+\item Chú lùn thứ nhất và thứ hai sau khi gia nhập nhóm sẽ mở lại
+\texttt{elfTex}, cho phép chú lùn tiếp theo vào.
+\item Chú lùn thứ ba đánh thức Santa nhưng không mở lại
+\texttt{elfTex}; do đó các chú lùn đến sau bị chặn bên ngoài.
+\item Sau khi nhóm đã đủ ba người, ba chú lùn thực hiện
+\texttt{getHelp()}, trong khi Santa thực hiện
+\texttt{helpElves()}.
+\item Chỉ sau khi cả ba chú lùn hiện tại đã hoàn tất
+\texttt{getHelp()}, chú lùn cuối cùng rời nhóm mới mở lại
+\texttt{elfTex} cho nhóm kế tiếp.
+\end{itemize}
+
+Theo lời giải của Downey, không cần một semaphore riêng để các chú lùn
+chờ Santa phát tín hiệu. Yêu cầu của bài toán là ngăn nhóm mới vào trước
+khi ba chú lùn hiện tại đã gọi \texttt{getHelp()}; nhiệm vụ này được
+thực hiện bởi \texttt{elfTex} \cite[Sec.~5.5.1--5.5.2, pp.~139--142]{downey2016}.
+
+\subsubsection{Giới hạn năng lực (Capacity Limits)}
+
+Bài toán có hai giới hạn bắt buộc:
+
+\begin{itemize}
+\item Santa chỉ chuẩn bị xe trượt tuyết cho một nhóm gồm 9 tuần lộc.
+\item Chỉ đúng 3 chú lùn được thuộc nhóm xin trợ giúp hiện tại.
+\end{itemize}
+
+Khi chú lùn thứ ba gia nhập nhóm, \texttt{elfTex} không được mở lại cho
+đến khi cả ba chú lùn đã thực hiện xong \texttt{getHelp()}.
+
+\subsubsection{Quy tắc ưu tiên và công bằng (Fairness/Priority)}
+
+Bài toán quy định tuần lộc có mức ưu tiên cao hơn chú lùn. Vì vậy, sau
+khi được đánh thức, Santa kiểm tra yêu cầu của tuần lộc trước:
+
+\begin{lstlisting}
+if (reindeer >= 9) {
+prepareSleigh();
+}
+else if (elves == 3) {
+helpElves();
+}
+\end{lstlisting}
+
+Cơ chế \texttt{elfTex} bảo đảm rằng một nhóm chú lùn đã hình thành sẽ
+không bị nhóm mới chen vào trong khi đang nhận trợ giúp. Tuy nhiên, lời
+giải vẫn giữ nguyên ưu tiên cho tuần lộc theo đặc tả của bài toán gốc.
+
+% =========================================================
+
+\subsection{Phân tích thử thách và lỗi tiềm ẩn (Challenges \& Pitfalls)}
+
+\subsubsection{Nguy cơ Race Condition}
+
+Giả sử hiện tại biến \texttt{elves = 1}. Hai chú lùn mới đến gần như
+đồng thời và cùng muốn tham gia nhóm. Nếu không có mutex, có thể xảy ra
+vết thực thi sau:
+
+\begin{lstlisting}
+Elf A doc elves = 1;
+Elf B doc elves = 1;
+
+Elf A ghi elves = 2;
+Elf B ghi elves = 2;
+\end{lstlisting}
+
+Kết quả cuối cùng là \texttt{elves = 2}, mặc dù thực tế đã có đủ ba chú
+lùn trong nhóm. Santa sẽ không được đánh thức đúng thời điểm.
+
+Tương tự, nếu các tuần lộc cập nhật \texttt{reindeer} mà không có khóa,
+hệ thống có thể ghi nhận sai số tuần lộc đã quay về.
+
+\subsubsection{Đoạn mã lỗi minh họa (Naive Solution)}
+
+\begin{lstlisting}
+// Giai phap sai: khong co mutex va khong khoa nhom elves
+Elf_Naive() {
+elves = elves + 1;
+
+if (elves == 3) {
+    signal(santaSem);
+}
+
+getHelp();
+
+}
+\end{lstlisting}
+
+Đoạn mã trên thất bại vì biến \texttt{elves} không được bảo vệ bởi
+mutex. Ngoài ra, không có \texttt{elfTex} để đóng cửa nhóm sau khi đủ
+ba chú lùn; vì vậy chú lùn thứ tư có thể chen vào nhóm hiện tại.
+
+\subsubsection{Phân tích Deadlock}
+
+Một giải pháp sai có thể để chú lùn giữ \texttt{mutex} trong khi chờ
+Santa thực hiện công việc:
+
+\begin{lstlisting}
+// Giai phap sai: chu lun giu mutex trong luc cho Santa
+wait(mutex);                 // Khoa bien elves
+elves = elves + 1;
+
+if (elves == 3) {
+signal(santaSem);        // Danh thuc Santa
+}
+
+wait(someSignal);            // Van giu mutex trong khi cho
+signal(mutex);
+\end{lstlisting}
+
+Trong trường hợp này, Santa sau khi thức dậy cần lấy \texttt{mutex} để
+kiểm tra biến \texttt{elves}. Tuy nhiên, chú lùn đang giữ chính mutex
+đó và chờ Santa. Hai phía chờ nhau vô hạn, dẫn đến deadlock.
+
+Lời giải đề xuất tránh tình huống trên vì chú lùn giải phóng
+\texttt{mutex} trước khi thực hiện \texttt{getHelp()}, còn Santa chỉ
+lấy mutex trong thời gian kiểm tra và xử lý điều kiện.
+
+\subsubsection{Phân tích Starvation và Livelock}
+
+Tuần lộc được ưu tiên hơn chú lùn theo đúng yêu cầu bài toán. Do đó, nếu
+hai loại yêu cầu cùng tồn tại, Santa sẽ xử lý tuần lộc trước.
+
+Đối với các chú lùn, \texttt{elfTex} ngăn nhóm mới chen vào nhóm hiện
+tại. Khi nhóm hiện tại đã hình thành, ba chú lùn trong nhóm đều được đi
+qua \texttt{getHelp()} trước khi cửa được mở cho nhóm mới.
+
+Lời giải không gây livelock, vì khi đủ điều kiện thì Santa hoặc nhóm
+tiến trình tương ứng đều thực hiện được công việc thay vì liên tục
+nhường quyền mà không tiến triển.
+
+% =========================================================
+
+\subsection{Giải pháp và mã giả chi tiết (Proposed Solution \& Pseudocode)}
+
+\subsubsection{Chiến lược tiếp cận}
+
+Giải pháp trong phần này được trình bày lại dựa trên lời giải semaphore
+của Downey trong mục \textit{Santa problem solution}
+\cite[Sec.~5.5.2, pp.~141--142]{downey2016}. Giải pháp sử dụng:
+
+\begin{itemize}
+\item Một semaphore \texttt{mutex} để bảo vệ hai biến đếm
+\texttt{elves} và \texttt{reindeer}.
+\item Một semaphore \texttt{santaSem} để Santa ngủ và được đánh thức.
+\item Một semaphore \texttt{reindeerSem} để tuần lộc chờ Santa chuẩn
+bị xe.
+\item Một semaphore \texttt{elfTex} để kiểm soát việc hình thành
+từng nhóm 3 chú lùn.
+\end{itemize}
+
+Giải pháp không sử dụng semaphore \texttt{helpSem}. Theo đặc tả và lời
+giải của Downey, sau khi nhóm 3 chú lùn đã đánh thức Santa, Santa gọi
+\texttt{helpElves()} còn ba chú lùn gọi \texttt{getHelp()}; semaphore
+\texttt{elfTex} bảo đảm nhóm mới không thể gia nhập quá sớm \cite[Sec.~5.5, pp.~137--142]{downey2016}.
+
+\subsubsection{Khởi tạo cấu trúc dữ liệu và biến đồng bộ}
+
+\begin{lstlisting}
+int elves = 0;                // So chu lun trong nhom hien tai
+int reindeer = 0;             // So tuan loc da quay ve va dang cho
+
+semaphore santaSem = 0;       // Santa ngu va cho tin hieu danh thuc
+semaphore reindeerSem = 0;    // Tuan loc cho Santa chuan bi xe
+semaphore elfTex = 1;         // Cua vao cho tung nhom 3 chu lun
+semaphore mutex = 1;          // Bao ve hai bien elves va reindeer
+\end{lstlisting}
+
+\subsubsection{Mã giả cho Santa}
+
+\begin{lstlisting}
+Santa() {
+while (true) {
+wait(santaSem);
+// Cho den khi tuan loc thu 9 hoac chu lun thu 3 danh thuc Santa.
+
+    wait(mutex);
+    // Khoa hai bien dem de kiem tra dieu kien an toan.
+
+    if (reindeer >= 9) {
+        prepareSleigh();
+        // Uu tien xu ly nhom tuan loc neu da co du 9 con.
+
+        for (int i = 1; i <= 9; i++) {
+            signal(reindeerSem);
+            // Cho phep tung tuan loc thuc hien getHitched().
+        }
+
+        reindeer = reindeer - 9;
+        // Loai nhom 9 tuan loc vua duoc xu ly khoi bien dem.
+    }
+    else if (elves == 3) {
+        helpElves();
+        // Santa giup nhom 3 chu lun hien tai.
+        // Khong phat semaphore rieng cho cac chu lun.
+    }
+
+    signal(mutex);
+    // Mo khoa sau khi hoan tat viec kiem tra va xu ly.
+}
+
+}
+\end{lstlisting}
+
+\subsubsection{Mã giả cho tuần lộc}
+
+\begin{lstlisting}
+Reindeer() {
+while (true) {
+returnFromVacation();
+// Phan khong can dong bo: tuan loc quay ve sau ky nghi.
+
+    wait(mutex);
+    // Khoa bien reindeer truoc khi cap nhat.
+
+    reindeer = reindeer + 1;
+    // Ghi nhan mot tuan loc vua quay ve.
+
+    if (reindeer == 9) {
+        signal(santaSem);
+        // Tuan loc thu 9 danh thuc Santa.
+    }
+
+    signal(mutex);
+    // Mo khoa de cac tien trinh khac co the truy cap bien dem.
+
+    wait(reindeerSem);
+    // Cho Santa chuan bi xe truot tuyet.
+
+    getHitched();
+    // Tuan loc duoc mac vao xe.
+}
+
+}
+\end{lstlisting}
+
+\subsubsection{Mã giả cho chú lùn}
+
+\begin{lstlisting}
+Elf() {
+while (true) {
+makeToys();
+// Phan khong can dong bo: chu lun lam do choi.
+
+    encounterProblem();
+    // Chu lun gap kho khan va can tro giup.
+
+    wait(elfTex);
+    // Xin quyen gia nhap nhom hien tai.
+    // Neu nhom da du 3 nguoi, chu lun moi phai cho tai day.
+
+    wait(mutex);
+    // Khoa bien elves truoc khi cap nhat.
+
+    elves = elves + 1;
+    // Them mot chu lun vao nhom xin tro giup.
+
+    if (elves == 3) {
+        signal(santaSem);
+        // Chu lun thu 3 danh thuc Santa.
+        // Khong mo elfTex vi nhom hien tai da du ba nguoi.
+    }
+    else {
+        signal(elfTex);
+        // Nhom chua du ba nguoi, mo cua cho chu lun ke tiep.
+    }
+
+    signal(mutex);
+    // Mo khoa sau khi cap nhat bien elves.
+
+    getHelp();
+    // Chu lun thuc hien viec nhan tro giup.
+    // Theo Downey, khong can cho mot tin hieu rieng tu Santa.
+
+    wait(mutex);
+    // Khoa bien elves truoc khi roi nhom hien tai.
+
+    elves = elves - 1;
+    // Ghi nhan chu lun da hoan tat getHelp().
+
+    if (elves == 0) {
+        signal(elfTex);
+        // Chu lun cuoi cung mo cua cho nhom tiep theo.
+    }
+
+    signal(mutex);
+    // Mo khoa sau khi cap nhat xong.
+}
+
+}
+\end{lstlisting}
+
+\subsubsection{Kiểm chứng (Walkthrough/Dry-run)}
+
+Giả sử lần lượt có ba chú lùn gặp khó khăn. Chú lùn thứ nhất và thứ hai
+tăng biến \texttt{elves}, sau đó mở lại \texttt{elfTex} để cho phép chú
+lùn kế tiếp gia nhập nhóm. Khi chú lùn thứ ba đi vào,
+\texttt{elves = 3}; chú lùn này đánh thức Santa nhưng không mở lại
+\texttt{elfTex}. Vì vậy, chú lùn thứ tư không thể chen vào nhóm hiện tại.
+
+Sau khi nhóm đã đủ ba người, các chú lùn thực hiện
+\texttt{getHelp()} và Santa thực hiện \texttt{helpElves()}. Mỗi chú lùn
+sau khi hoàn tất \texttt{getHelp()} sẽ giảm biến \texttt{elves} trong
+vùng được bảo vệ bởi \texttt{mutex}. Chú lùn cuối cùng làm
+\texttt{elves = 0} rồi mở lại \texttt{elfTex}; từ thời điểm đó nhóm mới
+mới có thể được hình thành.
+
+Nếu tuần lộc thứ 9 quay về, tiến trình này đánh thức Santa. Khi Santa
+kiểm tra thấy \texttt{reindeer >= 9}, Santa ưu tiên gọi
+\texttt{prepareSleigh()} và giải phóng đúng 9 tuần lộc thông qua
+\texttt{reindeerSem}. Mọi cập nhật biến đếm đều nằm trong vùng bảo vệ
+của \texttt{mutex}, nhờ đó tránh được race condition.
+
+\subsection{Kết luận bài toán}
+
+Bài toán Ông già Noel minh họa việc đồng bộ nhiều nhóm tiến trình với
+điều kiện kích hoạt và mức ưu tiên khác nhau. Thông qua
+\texttt{mutex}, \texttt{santaSem}, \texttt{reindeerSem} và
+\texttt{elfTex}, lời giải bảo đảm Santa xử lý đúng điều kiện, tuần lộc
+được ưu tiên theo đặc tả và các chú lùn được chia thành từng nhóm đúng
+ba người.
+
+\section{Bài toán Trông trẻ (Child Care Problem)}
 
 Bài toán Child Care đặt ra ràng buộc tỷ lệ giữa số trẻ em và số người lớn trong phòng. Trẻ em chỉ được vào nếu sau khi vào vẫn thỏa mãn tỷ lệ an toàn; người lớn chỉ được rời đi nếu sau khi rời đi tỷ lệ vẫn hợp lệ.
 
@@ -362,23 +834,7 @@ Sau khi một tiến trình vào/ra, cần \textit{signal/broadcast} để đán
     \item \textbf{Không dùng vòng lặp khi wait:} luôn dùng \texttt{while} (không dùng \texttt{if}) để tránh đánh thức giả (spurious wakeup) và tránh sai do lịch trình.
 \end{itemize}
 
-\section{Bài toán tạo phân tử H2O -- Chưa phân công}
-
-\textbf{Người phụ trách:} Chưa phân công.
-
-Bài toán yêu cầu ghép đúng hai nguyên tử hydro và một nguyên tử oxy để tạo thành một phân tử nước. Không nguyên tử nào được đi tiếp nếu chưa tạo đủ nhóm hợp lệ.
-
-Các ý chính cần triển khai:
-\begin{itemize}
-    \item Xác định hai loại tiến trình: H và O.
-    \item Đảm bảo mỗi nhóm phản ứng có đúng 2 H và 1 O.
-    \item Sử dụng semaphore để chặn các nguyên tử dư.
-    \item Dùng barrier để ba tiến trình trong cùng phân tử kết thúc đồng bộ.
-\end{itemize}
-
-\section{Bài toán Ghép đội đấu hạng (Multiplayer Matchmaking Problem) -- Tuấn}
-
-\textbf{Người phụ trách:} Tuấn.
+\section{Bài toán Ghép đội đấu hạng (Multiplayer Matchmaking Problem)}
 
 Bài toán mô phỏng hệ thống ghép trận trong game nhiều người chơi. Người chơi phải chờ cho đến khi đủ số lượng hoặc đủ điều kiện xếp hạng để tạo một trận đấu hợp lệ.
 

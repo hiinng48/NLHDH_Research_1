@@ -44,6 +44,28 @@
 \algrenewcommand\textproc[1]{\texttt{#1}}
 \setlength{\parindent}{0pt}
 
+% Dinh dang khung ma gia / code
+\lstset{
+    basicstyle=\ttfamily\small,
+    frame=single,
+    framerule=0.5pt,
+    rulecolor=\color{black!70},
+    backgroundcolor=\color{gray!5},
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    numbers=none,
+    tabsize=4,
+    xleftmargin=0.4cm,
+    xrightmargin=0.4cm,
+    framexleftmargin=8pt,
+    framexrightmargin=8pt,
+    framextopmargin=6pt,
+    framexbottommargin=6pt,
+    aboveskip=10pt,
+    belowskip=10pt
+}
 % Cấu hình fancyhdr
 \pagestyle{fancy}
 \fancyhf{} % Xóa tất cả các trường header và footer hiện tại
@@ -74,6 +96,7 @@
 \include{chapters/chap3}
 \include{chapters/chap4}
 \include{chapters/chap5}
+\include{chapters/chap6}
 % \include{appendix}
 \include{references}
 
